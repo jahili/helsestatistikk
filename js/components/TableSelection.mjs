@@ -1,114 +1,180 @@
+import { Badge, Segment, StepHeading, SearchField, Alert, Status, Icon, Button } from './ui.mjs';
+import { formatDateShort, formatDateLong } from '../lib/format.mjs';
+
 const h = React.createElement;
 
-export function renderTableSelection(
-    tables, selectedSource, tableSearch, expandedCategories, loading, error, step,
-    selectTable, setTableSearch, setExpandedCategories, setStep,
-    getTableLabel, getTableCategory
-) {
-    const filteredTables = tableSearch.trim() !== ''
-        ? tables.filter(function(table) {
-            const searchLower = tableSearch.toLowerCase();
-            const label = getTableLabel(table).toLowerCase();
-            const tableId = (table.tableId || '').toString().toLowerCase();
-            return label.includes(searchLower) || tableId.includes(searchLower);
-        })
-        : tables;
-
-    // Gruppér tabeller etter category
-    const groupedByCategory = {};
-    filteredTables.forEach(function(table) {
-        const category = getTableCategory(table) || 'Andre';
-        if (!groupedByCategory[category]) {
-            groupedByCategory[category] = [];
-        }
-        groupedByCategory[category].push(table);
+function filterTables(ctx) {
+    const q = ctx.tableSearch.trim().toLowerCase();
+    if (!q) return ctx.tables;
+    return ctx.tables.filter(function(table) {
+        const label = (ctx.getTableLabel(table) || '').toLowerCase();
+        const tableId = (table.tableId || '').toString().toLowerCase();
+        return label.includes(q) || tableId.includes(q);
     });
+}
 
-    // Sorter kategorier alfabetisk
-    const sortedCategories = Object.keys(groupedByCategory).sort();
+function isHighlighted(ctx, table) {
+    return Boolean(ctx.highlightedTable) && String(ctx.highlightedTable.tableId) === String(table.tableId);
+}
 
-    // Toggle category expand/collapse
-    const toggleCategory = function(category) {
-        setExpandedCategories(function(prev) {
-            return Object.assign({}, prev, {
-                [category]: !prev[category]
-            });
-        });
-    };
+function tableRow(ctx, table, indent) {
+    const selected = isHighlighted(ctx, table);
+    return h('li', { key: table.tableId },
+        h('button', {
+            type: 'button',
+            className: 'list-row table-row' + (indent ? ' table-row-indent' : '') + (selected ? ' is-selected' : ''),
+            'aria-pressed': selected ? 'true' : 'false',
+            onClick: function() { ctx.highlightTable(table); },
+            onDoubleClick: function() { ctx.selectTable(table); }
+        },
+            h('span', { className: 'table-row-title' }, ctx.getTableLabel(table)),
+            table.modifiedAt && h('span', { className: 'row-date' }, formatDateShort(table.modifiedAt)),
+            h(Badge, { selected: selected }, table.tableId)
+        )
+    );
+}
 
-    return h('div', { className: 'card' },
-        h('div', { className: 'mb-2' },
-            h('h2', { className: 'flex items-center gap-2 mb-2' }, 'Velg tabell fra ' + (selectedSource ? selectedSource.title || selectedSource.name : '')),
-            h('p', { className: 'text-gray-600 text-sm' }, 'Velg hvilken tabell du vil bygge en spørring for')
-        ),
-        h('input', {
-            type: 'text',
-            className: 'input mb-2',
-            placeholder: 'Søk i tabeller...',
-            'aria-label': 'Søk i tilgjengelige tabeller',
-            value: tableSearch,
-            onChange: function(e) { setTableSearch(e.target.value); }
-        }),
-        loading && h('p', { className: 'text-gray-500 text-sm mb-2', role: 'status', 'aria-live': 'polite' }, 'Laster tabeller...'),
-        error && h('div', { className: 'alert mb-2 text-sm', role: 'alert', 'aria-live': 'assertive' }, error),
+function renderByTheme(ctx, tables) {
+    const grouped = {};
+    tables.forEach(function(table) {
+        const category = ctx.getTableCategory(table) || 'Andre';
+        (grouped[category] = grouped[category] || []).push(table);
+    });
+    const searching = ctx.tableSearch.trim() !== '';
 
-        // Moderne meny
-        h('div', { style: {
-            overflowY: 'auto',
-            marginBottom: '0.5rem',
-            border: '1px solid #e5e7eb',
-            borderRadius: '0.5rem',
-            backgroundColor: '#ffffff'
-        }},
-            h('div', null,
-                sortedCategories.map(function(category, idx) {
-                    const tablesInCategory = groupedByCategory[category];
-                    const isExpanded = expandedCategories[category] !== false;
+    return h('div', { className: 'list-card table-list' },
+        Object.keys(grouped).sort().map(function(category) {
+            // Under søk vises alle treff uansett om temaet er lukket.
+            const expanded = searching || ctx.expandedCategories[category] !== false;
+            const listId = 'tema-' + category.replace(/\W+/g, '-');
+            return h('div', { key: category, className: 'theme-group' },
+                h('button', {
+                    type: 'button',
+                    className: 'theme-header',
+                    'aria-expanded': expanded ? 'true' : 'false',
+                    'aria-controls': listId,
+                    onClick: function() {
+                        ctx.setExpandedCategories(function(prev) {
+                            return Object.assign({}, prev, { [category]: !expanded });
+                        });
+                    }
+                },
+                    expanded ? Icon.chevronDown(14) : Icon.chevronRight(14),
+                    h('span', { className: 'theme-title' }, category),
+                    h('span', { className: 'theme-count' }, grouped[category].length)
+                ),
+                expanded && h('ul', { id: listId, className: 'theme-rows' },
+                    grouped[category].map(function(table) { return tableRow(ctx, table, true); })
+                )
+            );
+        })
+    );
+}
 
-                    return h('div', { key: category },
-                        // KATEGORI-HEADER (lik geo-county)
-                        h('div', { className: 'geo-county' },
-                            h('button', {
-                                onClick: function() { toggleCategory(category); },
-                                className: 'geo-county-header',
-                                style: { width: '100%', justifyContent: 'flex-start' }
-                            },
-                                h('svg', {
-                                    className: 'geo-chevron' + (isExpanded ? ' expanded' : ''),
-                                    viewBox: '0 0 24 24',
-                                    onClick: function(e) {
-                                        e.stopPropagation();
-                                        toggleCategory(category);
-                                    }
-                                },
-                                    h('polyline', { points: '9 18 15 12 9 6', fill: 'none', stroke: 'currentColor', strokeWidth: '2' })
-                                ),
-                                h('span', null, category)
-                            )
-                        ),
+function renderByDate(ctx, tables) {
+    const sorted = tables.slice().sort(function(a, b) {
+        return String(b.modifiedAt || '').localeCompare(String(a.modifiedAt || ''));
+    });
+    return h('ul', { className: 'list-card table-list' },
+        sorted.map(function(table) { return tableRow(ctx, table, false); })
+    );
+}
 
-                        // TABELLER (lik geo-municipality-list)
-                        isExpanded && h('div', { className: 'geo-municipality-list' },
-                            tablesInCategory.map(function(table) {
-                                return h('div', { key: table.tableId, className: 'geo-municipality' },
-                                    h('div', { className: 'geo-municipality-header', onClick: function() { selectTable(table); }, style: { cursor: 'pointer' } },
-                                        h('span', { className: 'flex-1' }, getTableLabel(table)),
-                                        table.modifiedAt && h('span', { className: 'text-xs', style: { color: '#9ca3af', marginLeft: '0.5rem' } }, 'Oppdatert: ' + table.modifiedAt.split('T')[0] + '  [tableId: ' + table.tableId + ']')
-                                    )
+function renderDetail(ctx) {
+    const table = ctx.highlightedTable;
+    const source = ctx.selectedSource;
+    if (!table || !source) {
+        return h('div', { className: 'card detail-card detail-empty' },
+            Icon.table(28),
+            h('p', null, 'Velg en tabell i listen for å se dimensjonene før du går videre.')
+        );
+    }
+    const key = source.id + '/' + table.tableId;
+    const dims = ctx.tablePreviewDims[key];
+    const label = ctx.getTableLabel(table);
+    // API-tittelen er av og til bare et internt navn (f.eks. «D14a_demens»); vis den bare når den er lesbar tekst.
+    const summary = table.title && table.title !== label && /\s/.test(table.title.trim()) ? table.title : null;
+
+    return h(React.Fragment, null,
+        h('section', { className: 'card detail-card', 'aria-labelledby': 'detail-title', 'aria-live': 'polite' },
+            h('div', { className: 'detail-head' },
+                h('span', { className: 'detail-path' }, source.id + ' / Table / ' + table.tableId),
+                h('h2', { id: 'detail-title', className: 'detail-title' }, label),
+                summary && h('p', { className: 'detail-summary' }, summary)
+            ),
+            h('div', { className: 'detail-dims' },
+                h('h3', { className: 'section-label' }, 'Dimensjoner'),
+                !dims || dims.status === 'loading'
+                    ? h(Status, null, 'Henter dimensjoner …')
+                    : dims.status === 'error'
+                        ? h('p', { className: 'help-text' }, dims.message)
+                        : h('ul', { className: 'dim-list' },
+                            dims.dims.map(function(d) {
+                                return h('li', { key: d.code, className: 'dim-list-row' },
+                                    h('span', null, d.label || d.code, h('code', { className: 'code-inline' }, d.code)),
+                                    h('span', { className: 'mono dim-count', title: d.count + ' kategorier' }, d.count)
                                 );
                             })
                         )
-                    );
-                })
+            ),
+            table.modifiedAt && h('div', { className: 'detail-updated' },
+                h('span', null, 'Sist oppdatert'),
+                h('span', null, formatDateLong(table.modifiedAt))
             )
         ),
-
-        filteredTables.length === 0 && tableSearch.trim() !== '' && h('p', { className: 'text-gray-500 text-sm text-center mb-2' },
-            'Ingen tabeller funnet'
-        ),
-        h('button', {
-            className: 'btn btn-outline text-sm',
-            onClick: function() { setTableSearch(''); setStep(1); }
-        }, 'Tilbake til kilder')
+        h('div', { className: 'detail-links' },
+            h(Button, {
+                variant: 'link',
+                onClick: function() { ctx.fetchMetadata(source.id, table.tableId, { openModal: true }); }
+            }, 'Om tabellen'),
+            source.aboutUrl && h('a', { href: source.aboutUrl, target: '_blank', rel: 'noopener noreferrer', className: 'detail-link' },
+                'Les mer om ' + (source.title || source.name) + ' hos FHI ↗')
+        )
     );
+}
+
+export function renderTableStep(ctx) {
+    const source = ctx.selectedSource;
+    const tables = filterTables(ctx);
+
+    return h('div', { className: 'table-step' },
+        h('div', { className: 'table-step-list' },
+            h(StepHeading, {
+                eyebrow: '02 · TABELL',
+                title: source ? (source.title || source.name) : 'Tabell',
+                subtitle: 'Velg tabellen du vil bygge en spørring for'
+            }),
+            h('div', { className: 'toolbar' },
+                h(SearchField, {
+                    id: 'table-search',
+                    label: 'Søk i tabeller eller tableId',
+                    placeholder: 'Søk i tabeller eller tableId',
+                    value: ctx.tableSearch,
+                    onChange: ctx.setTableSearch
+                }),
+                h(Segment, {
+                    label: 'Sortering',
+                    size: 'lg',
+                    value: ctx.tableSort,
+                    onChange: ctx.setTableSort,
+                    options: [{ value: 'theme', label: 'Etter tema' }, { value: 'updated', label: 'Sist oppdatert' }]
+                })
+            ),
+            ctx.error && h(Alert, null, ctx.error),
+            ctx.loading && ctx.tables.length === 0
+                ? h(Status, null, 'Laster tabeller …')
+                : tables.length === 0
+                    ? h('p', { className: 'empty-text' }, ctx.tableSearch.trim() ? 'Ingen tabeller funnet.' : 'Kilden har ingen tabeller.')
+                    : (ctx.tableSort === 'updated' ? renderByDate(ctx, tables) : renderByTheme(ctx, tables))
+        ),
+        h('aside', { className: 'table-step-detail', 'aria-label': 'Valgt tabell' }, renderDetail(ctx))
+    );
+}
+
+export function renderTableActions(ctx) {
+    const t = ctx.highlightedTable;
+    return t
+        ? h(Button, { variant: 'primary', size: 'lg', block: true, onClick: function() { ctx.selectTable(t); }, trailingIcon: Icon.arrowRight() },
+            'Velg tabell ' + t.tableId)
+        : h(Button, { variant: 'primary', size: 'lg', block: true, disabled: true }, 'Velg en tabell for å fortsette');
 }

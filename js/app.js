@@ -10,7 +10,7 @@ import { previewToCsv, csvFileName } from './lib/preview.mjs';
 import { Header, Sidebar, StepDots, Credits } from './components/Layout.mjs';
 import { Button, Icon } from './components/ui.mjs';
 import { renderSourceStep, renderSourceActions } from './components/SourceSelection.mjs';
-import { renderTableSelection } from './components/TableSelection.mjs';
+import { renderTableStep, renderTableActions } from './components/TableSelection.mjs';
 import { renderDimensionConfiguration } from './components/DimensionConfiguration.mjs';
 import { renderQueryResult } from './components/QueryResult.mjs';
 import { renderMetadataModal, closeMetadataModal as closeMetadataModalImpl } from './components/MetadataModal.mjs';
@@ -368,6 +368,7 @@ function FHIQueryBuilder() {
         setPreviewData(null);
         setTableSearch('');
         setExpandedCategories({});
+        tablesSourceId.current = source.id;
         fetchTables(source.id);
         setStep(2);
         setHighlightedTable(null);
@@ -379,8 +380,24 @@ function FHIQueryBuilder() {
 
     function highlightTable(table) {
         setHighlightedTable(table);
-        if (selectedSource) fetchTablePreviewDims(selectedSource.id, table.tableId);
     }
+
+    // Steg 2: detaljpanelet viser dimensjonene til markert tabell.
+    useEffect(() => {
+        if (step === 2 && selectedSource && highlightedTable) {
+            fetchTablePreviewDims(selectedSource.id, highlightedTable.tableId);
+        }
+    }, [step, selectedSource, highlightedTable]);
+
+    // Tabellisten tilhører kilden den ble hentet for. Kom brukeren til steg 3 via
+    // søket i steg 1, er listen ikke hentet ennå, så hent den når steg 2 åpnes.
+    const tablesSourceId = useRef(null);
+    useEffect(() => {
+        if (step === 2 && selectedSource && tablesSourceId.current !== selectedSource.id) {
+            tablesSourceId.current = selectedSource.id;
+            fetchTables(selectedSource.id);
+        }
+    }, [step, selectedSource]);
 
     function updateDimensionConfig(dimCode, updates) {
         setQueryConfig(function(prev) {
@@ -514,11 +531,8 @@ function FHIQueryBuilder() {
         actions = renderSourceActions(ctx);
         tip = 'Vet du hva tabellen heter? Søk på tvers av alle kilder og hopp rett til steg 03.';
     } else if (step === 2) {
-        main = renderTableSelection(
-            tables, selectedSource, tableSearch, expandedCategories, loading, error, step,
-            selectTable, setTableSearch, setExpandedCategories, setStep,
-            boundGetTableLabel, boundGetTableCategory
-        );
+        main = renderTableStep(ctx);
+        actions = renderTableActions(ctx);
     } else if (step === 3) {
         main = renderDimensionConfiguration(
             dimensions, queryConfig, selectedSource, selectedTable, step,
