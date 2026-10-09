@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tokenizeJson } from './jsonHighlight.mjs';
+import { tokenizeJson, tokenizeStrings } from './jsonHighlight.mjs';
 
 test('tokenizes a simple object into key/string/punctuation tokens', () => {
     const tokens = tokenizeJson('{"code": "AAR"}');
@@ -19,4 +19,13 @@ test('round-trips: concatenated token text reproduces the input exactly', () => 
     const input = JSON.stringify({ dimensions: [{ code: 'AAR', filter: 'all', values: ['*'] }], response: { format: 'json-stat2' } }, null, 2);
     const tokens = tokenizeJson(input);
     assert.equal(tokens.map((t) => t.text).join(''), input);
+});
+
+test('tokenizeStrings skiller ut strenger med ""-escape', () => {
+    const tokens = tokenizeStrings('url="a""b", x=1');
+    assert.deepEqual(tokens, [
+        { type: 'punctuation', text: 'url=' },
+        { type: 'string', text: '"a""b"' },
+        { type: 'punctuation', text: ', x=1' }
+    ]);
 });

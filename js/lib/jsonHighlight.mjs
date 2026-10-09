@@ -30,3 +30,19 @@ export function tokenizeJson(jsonString) {
 
     return tokens;
 }
+
+// Enkel farging for Power Query (M) og cURL: bare strenger skilles ut.
+// M bruker "" som escape inne i strenger, cURL bruker '…'.
+export function tokenizeStrings(text) {
+    const tokens = [];
+    const regex = /"(?:[^"]|"")*"|'[^']*'/g;
+    let lastIndex = 0;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+        if (match.index > lastIndex) tokens.push({ type: 'punctuation', text: text.slice(lastIndex, match.index) });
+        tokens.push({ type: 'string', text: match[0] });
+        lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < text.length) tokens.push({ type: 'punctuation', text: text.slice(lastIndex) });
+    return tokens;
+}

@@ -4,15 +4,33 @@ import { getTableLabel, getTableCategory, flattenCategories } from './lib/tableL
 import { getGeographyGroups } from './lib/geo.mjs';
 import { findMetricDimension, buildQuery } from './lib/query.mjs';
 import { generatePowerQueryCode } from './lib/powerquery.mjs';
-import { renderStepIndicator } from './components/StepIndicator.mjs';
+import { expectedRows, isFiltered } from './lib/selection.mjs';
+import { formatNumber } from './lib/format.mjs';
+import { previewToCsv, csvFileName } from './lib/preview.mjs';
+import { Header, Sidebar, StepDots, Credits } from './components/Layout.mjs';
+import { Button, Icon } from './components/ui.mjs';
 import { renderSourceSelection } from './components/SourceSelection.mjs';
 import { renderTableSelection } from './components/TableSelection.mjs';
 import { renderDimensionConfiguration } from './components/DimensionConfiguration.mjs';
 import { renderQueryResult } from './components/QueryResult.mjs';
 import { renderMetadataModal, closeMetadataModal as closeMetadataModalImpl } from './components/MetadataModal.mjs';
 
-const { useState, useEffect, createElement: h } = React;
+const { useState, useEffect, useRef, createElement: h } = React;
 const API_BASE = 'https://statistikk-data.fhi.no/api/open/v1';
+const FORMAT_LABELS = { 'json-stat2': 'JSON-stat2', 'csv2': 'CSV · navn', 'csv3': 'CSV · koder' };
+
+function readStoredTheme() {
+    try {
+        const t = localStorage.getItem('fhi-theme');
+        return t === 'dark' || t === 'light' ? t : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function systemPrefersDark() {
+    return Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+}
 
 function FHIQueryBuilder() {
     const [step, setStep] = useState(1);
@@ -41,6 +59,22 @@ function FHIQueryBuilder() {
     const [tableLabels, setTableLabels] = useState({});
     const [expandedCategories, setExpandedCategories] = useState({});
     const [geoMappingUrl] = useState('https://raw.githubusercontent.com/janhli/FHI-API-Query-Builder/main/geo_mapping.csv');
+
+    // Rene visningsvalg for det nye grensesnittet. Påvirker ikke spørringen.
+    const [theme, setTheme] = useState(readStoredTheme);
+    const [copiedKey, setCopiedKey] = useState(null);
+    const [publisherFilter, setPublisherFilter] = useState('all');
+    const [tableSort, setTableSort] = useState('theme');
+    const [highlightedTable, setHighlightedTable] = useState(null);
+    const [tablePreviewDims, setTablePreviewDims] = useState({});
+    const [valueSearch, setValueSearch] = useState({});
+    const [wildcardDims, setWildcardDims] = useState({});
+    const [wildcardDrafts, setWildcardDrafts] = useState({});
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [pendingCsv, setPendingCsv] = useState(false);
+    const globalSearchRef = useRef(null);
+    const mainRef = useRef(null);
+    const copyTimer = useRef(null);
 
     useEffect(() => {
         fetchSources();
@@ -79,6 +113,51 @@ function FHIQueryBuilder() {
         }
         setFirstSentence(sentence);
     }, [tableMetadata]);
+
+    // Tema: lagret valg, ellers systemets innstilling.
+    const effectiveTheme = theme || (systemPrefersDark() ? 'dark' : 'light');
+    useEffect(() => {
+        if (theme) document.documentElement.setAttribute('data-theme', theme);
+        else document.documentElement.removeAttribute('data-theme');
+    }, [theme]);
+
+    function toggleTheme() {
+        const next = effectiveTheme === 'dark' ? 'light' : 'dark';
+        setTheme(next);
+        try { localStorage.setItem('fhi-theme', next); } catch (e) { /* lagring er valgfritt */ }
+    }
+
+    // Tastatursnarvei «/» fokuserer søket i steg 1.
+    useEffect(() => {
+        function handleSlash(e) {
+            if (e.key !== '/' || step !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
+            const tag = (e.target && e.target.tagName) || '';
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
+            e.preventDefault();
+            if (globalSearchRef.current) globalSearchRef.current.focus();
+        }
+        document.addEventListener('keydown', handleSlash);
+        return function() { document.removeEventListener('keydown', handleSlash); };
+    }, [step]);
+
+    // Flytt fokus til innholdet ved stegbytte, slik at skjermlesere følger med.
+    const firstRender = useRef(true);
+    useEffect(() => {
+        if (firstRender.current) { firstRender.current = false; return; }
+        if (mainRef.current) mainRef.current.focus({ preventScroll: true });
+        window.scrollTo(0, 0);
+    }, [step]);
+
+    // Steg 4: «Last ned som CSV» før forhåndsvisning er hentet laster ned når dataene kommer.
+    useEffect(() => {
+        if (pendingCsv && previewData) {
+            setPendingCsv(false);
+            downloadCsv();
+        }
+    }, [pendingCsv, previewData]);
+    useEffect(() => {
+        if (pendingCsv && error) setPendingCsv(false);
+    }, [pendingCsv, error]);
 
     async function fetchSources() {
         setLoading(true);
@@ -177,6 +256,29 @@ function FHIQueryBuilder() {
         }
     }
 
+    // Steg 2: hent dimensjonene for tabellen som er markert i listen, slik at
+    // detaljpanelet kan vise strukturen før brukeren går videre. Rører ikke
+    // `dimensions`/`queryConfig`, som fortsatt settes av fetchDimensions i steg 3.
+    async function fetchTablePreviewDims(sourceId, tableId) {
+        const key = sourceId + '/' + tableId;
+        if (tablePreviewDims[key] && tablePreviewDims[key].status !== 'error') return;
+        setTablePreviewDims(function(prev) { return Object.assign({}, prev, { [key]: { status: 'loading' } }); });
+        try {
+            const response = await fetch(API_BASE + '/' + sourceId + '/Table/' + tableId + '/dimension');
+            if (!response.ok) throw new Error('Kunne ikke hente dimensjoner');
+            const data = await response.json();
+            let dims = data && !Array.isArray(data) && data.dimensions ? data.dimensions : data;
+            if (!Array.isArray(dims)) throw new Error('Kunne ikke finne dimensions i API-responsen');
+            dims = dims.map(function(dim) {
+                const category = dim.category || (dim.categories ? flattenCategories(dim.categories) : null);
+                return { code: dim.code, label: dim.label, count: category && category.index ? category.index.length : 0 };
+            });
+            setTablePreviewDims(function(prev) { return Object.assign({}, prev, { [key]: { status: 'ok', dims: dims } }); });
+        } catch (err) {
+            setTablePreviewDims(function(prev) { return Object.assign({}, prev, { [key]: { status: 'error', message: err.message } }); });
+        }
+    }
+
     async function fetchMetadata(sourceId, tableId, options) {
         const openModal = Boolean(options && options.openModal);
         try {
@@ -249,6 +351,12 @@ function FHIQueryBuilder() {
         fetchDimensions(source.id, table.tableId);
         fetchMetadata(source.id, table.tableId);
         setStep(3);
+        // Visningsvalg som hører til forrige tabell
+        setHighlightedTable(table);
+        setValueSearch({});
+        setWildcardDims({});
+        setWildcardDrafts({});
+        setGeoSearch('');
     }
 
     function selectSource(source) {
@@ -262,10 +370,16 @@ function FHIQueryBuilder() {
         setExpandedCategories({});
         fetchTables(source.id);
         setStep(2);
+        setHighlightedTable(null);
     }
 
     function selectTable(table) {
         selectSourceAndTable(selectedSource, table);
+    }
+
+    function highlightTable(table) {
+        setHighlightedTable(table);
+        if (selectedSource) fetchTablePreviewDims(selectedSource.id, table.tableId);
     }
 
     function updateDimensionConfig(dimCode, updates) {
@@ -276,14 +390,56 @@ function FHIQueryBuilder() {
         });
     }
 
+    function resetAllDimensions() {
+        dimensions.forEach(function(dim) {
+            updateDimensionConfig(dim.code, { filter: 'all', values: ['*'], selectedCategories: [] });
+        });
+        setWildcardDims({});
+        setWildcardDrafts({});
+    }
+
     function buildFinalQuery() {
         setFinalQuery(buildQuery(dimensions, queryConfig, responseFormat, maxRowCount));
         setStep(4);
     }
 
-    function copyToClipboard(text) {
-        navigator.clipboard.writeText(text);
-        alert('Kopiert til utklippstavle!');
+    function startOver() {
+        setStep(1);
+        setSelectedSource(null);
+        setSelectedTable(null);
+        setDimensions([]);
+        setQueryConfig({});
+        setFinalQuery(null);
+        setPreviewData(null);
+        setHighlightedTable(null);
+    }
+
+    function copyToClipboard(text, key) {
+        const done = function() {
+            setCopiedKey(key || 'default');
+            clearTimeout(copyTimer.current);
+            copyTimer.current = setTimeout(function() { setCopiedKey(null); }, 2000);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done, function() { setError('Kunne ikke kopiere til utklippstavlen'); });
+        }
+    }
+
+    function downloadCsv() {
+        if (!previewData) {
+            setPendingCsv(true);
+            fetchPreview();
+            return;
+        }
+        const csvContent = previewToCsv(previewData, findMetricDimension);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.setAttribute('href', URL.createObjectURL(blob));
+        link.setAttribute('download', csvFileName(selectedSource && selectedSource.id, selectedTable && selectedTable.tableId));
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     function closeMetadataModal() {
@@ -296,75 +452,114 @@ function FHIQueryBuilder() {
         finalQuery, API_BASE, selectedSource && selectedSource.id, selectedTable && selectedTable.tableId
     );
 
-    return h('div', { className: 'bg-gradient' },
+    const rows = expectedRows(dimensions, queryConfig);
+    const filteredCount = dimensions.filter(function(dim) { return isFiltered(dim, queryConfig[dim.code]); }).length;
+
+    // Alt stegkomponentene trenger, samlet ett sted.
+    const ctx = {
+        API_BASE, step, setStep, loading, error,
+        sources, allTables, tables, selectedSource, selectedTable, highlightedTable,
+        dimensions, queryConfig, finalQuery, previewData, responseFormat, maxRowCount,
+        globalSearch, tableSearch, outputFormat, geoSearch, expandedCounties, expandedMunicipalities,
+        expandedCategories, firstSentence, geoMappingUrl, copiedKey, publisherFilter, tableSort,
+        tablePreviewDims, valueSearch, wildcardDims, wildcardDrafts, showAdvanced, pendingCsv, rows, filteredCount,
+        globalSearchRef,
+        selectSource, selectSourceAndTable, selectTable, highlightTable, updateDimensionConfig, resetAllDimensions,
+        buildFinalQuery, fetchPreview, fetchMetadata, copyToClipboard, downloadCsv, startOver,
+        setGlobalSearch, setTableSearch, setOutputFormat, setGeoSearch, setExpandedCounties, setExpandedMunicipalities,
+        setExpandedCategories, setResponseFormat, setMaxRowCount, setPublisherFilter, setTableSort,
+        setValueSearch, setWildcardDims, setWildcardDrafts, setShowAdvanced,
+        getTableLabel: boundGetTableLabel, getTableCategory: boundGetTableCategory,
+        generatePowerQueryCode: boundGeneratePowerQueryCode, getGeographyGroups, findMetricDimension
+    };
+
+    const stepItems = [
+        {
+            num: 1, title: 'Kilde',
+            summary: step === 1
+                ? 'Velg et register eller søk etter tabell'
+                : selectedSource && [selectedSource.title || selectedSource.name, h('code', { key: 'c', className: 'code-inline' }, selectedSource.id)],
+            available: true,
+            onSelect: function() { setStep(1); }
+        },
+        {
+            num: 2, title: 'Tabell',
+            summary: step === 2
+                ? (highlightedTable ? boundGetTableLabel(highlightedTable) : 'Velg en tabell fra listen')
+                : selectedTable && [boundGetTableLabel(selectedTable), h('code', { key: 'c', className: 'code-inline' }, selectedTable.tableId)],
+            available: Boolean(selectedSource),
+            onSelect: function() { if (selectedSource) setStep(2); }
+        },
+        {
+            num: 3, title: 'Variabler',
+            summary: step === 3
+                ? (dimensions.length ? filteredCount + ' av ' + dimensions.length + ' dimensjoner filtrert' : 'Laster dimensjoner …')
+                : finalQuery && formatNumber(rows.total) + ' rader · ' + FORMAT_LABELS[finalQuery.response.format],
+            available: Boolean(selectedTable),
+            onSelect: function() { if (selectedTable) setStep(3); }
+        },
+        {
+            num: 4, title: 'Spørring',
+            summary: 'Klar til bruk',
+            available: Boolean(finalQuery),
+            onSelect: function() { if (finalQuery) setStep(4); }
+        }
+    ];
+
+    let main = null;
+    let actions = null;
+    let tip = null;
+    if (step === 1) {
+        main = renderSourceSelection(
+            sources, tables, globalSearch, loading, error,
+            selectSource, selectSourceAndTable, setGlobalSearch,
+            getSourceIcon, boundGetTableLabel, Icons
+        );
+        actions = selectedSource
+            ? h(Button, { variant: 'primary', size: 'lg', block: true, onClick: function() { setStep(2); }, trailingIcon: Icon.arrowRight() },
+                'Fortsett med ' + (selectedSource.title || selectedSource.name))
+            : h(Button, { variant: 'primary', size: 'lg', block: true, disabled: true }, 'Velg en kilde for å fortsette');
+        tip = 'Vet du hva tabellen heter? Søk på tvers av alle kilder og hopp rett til steg 03.';
+    } else if (step === 2) {
+        main = renderTableSelection(
+            tables, selectedSource, tableSearch, expandedCategories, loading, error, step,
+            selectTable, setTableSearch, setExpandedCategories, setStep,
+            boundGetTableLabel, boundGetTableCategory
+        );
+    } else if (step === 3) {
+        main = renderDimensionConfiguration(
+            dimensions, queryConfig, selectedSource, selectedTable, step,
+            responseFormat, maxRowCount, loading, error, firstSentence,
+            geoSearch, expandedCounties, expandedMunicipalities,
+            updateDimensionConfig, buildFinalQuery, getGeographyGroups, boundGetTableLabel, fetchMetadata,
+            setGeoSearch, setExpandedCounties, setExpandedMunicipalities,
+            setResponseFormat, setMaxRowCount, setStep, Icons
+        );
+    } else if (step === 4) {
+        main = renderQueryResult(
+            finalQuery, selectedSource, selectedTable, dimensions,
+            previewData, outputFormat, loading, error, firstSentence, geoMappingUrl,
+            fetchPreview, copyToClipboard, boundGeneratePowerQueryCode, findMetricDimension, boundGetTableLabel,
+            setOutputFormat, setStep,
+            setSelectedSource, setSelectedTable, setDimensions, setQueryConfig, setFinalQuery, setPreviewData,
+            API_BASE, Icons
+        );
+    }
+
+    return h('div', { className: 'app' },
         h('a', { href: '#main-content', className: 'skip-link' }, 'Gå til hovedinnhold'),
         renderMetadataModal(showMetadataModal, tableMetadata, closeMetadataModal),
-        h('div', { className: 'container', id: 'main-content', tabIndex: -1 },
-            h('div', { className: 'text-center mb-8' },
-                h('h1', { className: 'mb-2' }, 'FHI API Query Builder'),
-                h('p', { className: 'text-gray-600' }, 'Bygg spørringer mot FHIs åpne statistikk-API. '),
-                h('p', { className: 'text-gray-600' }, 'Velg kilde, tabell og variabler. Kopier JSON-spørring, innbyggingskode for Power Query eller last ned som CSV-fil.')
-            ),
-            renderStepIndicator(step, selectedSource, selectedTable, finalQuery, setStep),
-            h('div', { className: 'card' },
-                step === 1 && renderSourceSelection(
-                    sources, tables, globalSearch, loading, error,
-                    selectSource, selectSourceAndTable, setGlobalSearch,
-                    getSourceIcon, boundGetTableLabel, Icons
-                ),
-                step === 2 && renderTableSelection(
-                    tables, selectedSource, tableSearch, expandedCategories, loading, error, step,
-                    selectTable, setTableSearch, setExpandedCategories, setStep,
-                    boundGetTableLabel, boundGetTableCategory
-                ),
-                step === 3 && renderDimensionConfiguration(
-                    dimensions, queryConfig, selectedSource, selectedTable, step,
-                    responseFormat, maxRowCount, loading, error, firstSentence,
-                    geoSearch, expandedCounties, expandedMunicipalities,
-                    updateDimensionConfig, buildFinalQuery, getGeographyGroups, boundGetTableLabel, fetchMetadata,
-                    setGeoSearch, setExpandedCounties, setExpandedMunicipalities,
-                    setResponseFormat, setMaxRowCount, setStep, Icons
-                ),
-                step === 4 && renderQueryResult(
-                    finalQuery, selectedSource, selectedTable, dimensions,
-                    previewData, outputFormat, loading, error, firstSentence, geoMappingUrl,
-                    fetchPreview, copyToClipboard, boundGeneratePowerQueryCode, findMetricDimension, boundGetTableLabel,
-                    setOutputFormat, setStep,
-                    setSelectedSource, setSelectedTable, setDimensions, setQueryConfig, setFinalQuery, setPreviewData,
-                    API_BASE, Icons
-                )
-            ),
-            h('div', { className: 'mt-6 text-center text-sm text-gray-600' },
-                h('p', null,
-                    'Data fra ',
-                    h('a', {
-                        href: 'https://statistikk-data.fhi.no',
-                        className: 'text-blue-600',
-                        target: '_blank',
-                        rel: 'noopener noreferrer'
-                    }, 'FHI Statistikk')
-                ),
-                h('p', { className: 'mt-4' },
-                    'Utarbeidet av ',
-                    h('a', {
-                        href: 'https://akershusanalyse.no/',
-                        className: 'text-blue-600',
-                        target: '_blank',
-                        rel: 'noopener noreferrer'
-                    }, 'Akershus analyse'),
-                    ', en del av ',
-                    h('a', {
-                        href: 'https://afk.no/',
-                        className: 'text-blue-600',
-                        target: '_blank',
-                        rel: 'noopener noreferrer'
-                    }, 'Akershus fylkeskommune')
-                ),
-                h('p', { className: 'mt-2' },
-                    'kontakt: ',
-                    h('a', { href: 'mailto:janli@afk.no', className: 'text-blue-600' }, 'janli@afk.no')
-                )
+        h(Header, { theme: effectiveTheme, onToggleTheme: toggleTheme }),
+        h('div', { className: 'app-body' },
+            h(Sidebar, { step: step, items: stepItems, tip: tip, actions: actions }),
+            h('main', { id: 'main-content', ref: mainRef, tabIndex: -1, className: 'content content-step' + step, 'aria-label': 'Hovedinnhold' },
+                h(StepDots, { step: step, items: stepItems }),
+                main,
+                h(Credits, { className: 'mobile-only' })
             )
+        ),
+        h('div', { className: 'toast', role: 'status', 'aria-live': 'polite' },
+            copiedKey ? h('span', { className: 'toast-inner' }, Icon.check(14), 'Kopiert til utklippstavlen') : null
         )
     );
 }
