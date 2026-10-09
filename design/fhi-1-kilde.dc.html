@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<title>FHI – velg kilde</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F2}
+a{color:#0F6B63}a:hover{color:#0A4F49}
+</style>
+</helmet>
+<div style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; color: #15201E; background: #F4F5F2; min-height: 940px; display: flex; flex-direction: column; font-size: 14px; line-height: 1.45">
+
+  <header style="height: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 20px; background: #FFFFFF; border-bottom: 1px solid #E1E4DF; flex-wrap: wrap">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="#0F6B63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 C6 5 6 9 6 11 C6 13 4 15 3 15 C4 15 6 17 6 19 C6 21 6 25 10 25"></path><path d="M20 5 C24 5 24 9 24 11 C24 13 26 15 27 15 C26 15 24 17 24 19 C24 21 24 25 20 25"></path><path d="M12 19 V14 M15 19 V11 M18 19 V16" stroke-opacity="0.55"></path></svg>
+      <div style="display: flex; flex-direction: column">
+        <span style="font-weight: 700; font-size: 16px; letter-spacing: -0.01em">FHI API Query Builder</span>
+        <span style="font-size: 12px; color: #5B6764">Spørringer mot FHIs åpne statistikk-API · JSON, Power Query og CSV</span>
+      </div>
+    </div>
+    <nav style="display: flex; align-items: center; gap: 6px">
+      <a href="#" style="padding: 8px 12px; text-decoration: none; color: #3D4845; font-weight: 500">Om verktøyet</a>
+      <a href="#" style="padding: 8px 12px; text-decoration: none; color: #3D4845; font-weight: 500">API-dokumentasjon</a>
+      <a href="#" style="padding: 8px 12px; text-decoration: none; color: #3D4845; font-weight: 500">GitHub</a>
+      <button aria-label="Bytt til mørkt tema" style="width: 40px; height: 40px; border: 1px solid #E1E4DF; background: #FFFFFF; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3D4845" stroke-width="2" stroke-linecap="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg></button>
+    </nav>
+  </header>
+
+  <div style="flex: 1; display: flex; flex-wrap: wrap; min-height: 0">
+
+    <aside style="flex: 1 1 340px; max-width: 360px; background: #FFFFFF; border-right: 1px solid #E1E4DF; display: flex; flex-direction: column">
+      <div style="flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 600; color: #5B6764; letter-spacing: 0.04em; padding: 0 12px 8px">DIN SPØRRING</span>
+        <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px">
+          <li style="display: flex; gap: 12px; padding: 12px; border-radius: 12px; background: #E8F3F1">
+            <span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; background: #0F6B63; color: #FFFFFF; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: flex; align-items: center; justify-content: center">01</span>
+            <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 15px">Kilde</span><span style="font-size: 13px; color: #3D4845">Velg et register eller søk etter tabell</span></span>
+          </li>
+          <li style="display: flex; gap: 12px; padding: 12px; border-radius: 12px">
+            <span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; border: 1px solid #CFD5CF; color: #5B6764; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: flex; align-items: center; justify-content: center">02</span>
+            <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 15px; color: #5B6764">Tabell</span></span>
+          </li>
+          <li style="display: flex; gap: 12px; padding: 12px; border-radius: 12px">
+            <span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; border: 1px solid #CFD5CF; color: #5B6764; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: flex; align-items: center; justify-content: center">03</span>
+            <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 15px; color: #5B6764">Variabler</span></span>
+          </li>
+          <li style="display: flex; gap: 12px; padding: 12px; border-radius: 12px">
+            <span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; border: 1px solid #CFD5CF; color: #5B6764; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: flex; align-items: center; justify-content: center">04</span>
+            <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 15px; color: #5B6764">Spørring</span></span>
+          </li>
+        </ol>
+        <div style="margin-top: 18px; padding: 14px; border: 1px solid #E1E4DF; border-radius: 12px; display: flex; flex-direction: column; gap: 6px">
+          <span style="font-weight: 600">Tips</span>
+          <span style="font-size: 13px; color: #3D4845">Vet du hva tabellen heter? Søk på tvers av alle kilder og hopp rett til steg 03.</span>
+        </div>
+      </div>
+      <div style="position: sticky; bottom: 0; padding: 16px 20px 20px; border-top: 1px solid #E1E4DF; background: #FAFBF9; display: flex; flex-direction: column; gap: 10px">
+        <button disabled="" style="height: 48px; border: 0; border-radius: 12px; background: #DDE2DD; color: #5B6764; font: inherit; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px">Velg en kilde for å fortsette</button>
+        <span style="font-size: 12px; color: #5B6764">Data fra FHI Statistikk · Utarbeidet av Akershus analyse, Akershus fylkeskommune</span>
+      </div>
+    </aside>
+
+    <main style="flex: 999 1 560px; min-width: 0; padding: 32px 40px 40px; display: flex; flex-direction: column; gap: 22px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #0F6B63; font-weight: 500">01 · KILDE</span>
+        <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em">Hvilket register vil du hente fra?</h1>
+      </div>
+
+      <div style="height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border: 1px solid #CFD5CF; border-radius: 12px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(21,32,30,0.05)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6764" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+        <label for="sok1" style="position: absolute; width: 1px; height: 1px; overflow: hidden">Søk etter tabell</label>
+        <input id="sok1" placeholder="Søk etter tabell på tvers av alle kilder, f.eks. «dødsfall alder»" style="border: 0; outline: none; font: inherit; font-size: 15px; flex: 1; color: #15201E; background: transparent">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5B6764; border: 1px solid #CFD5CF; border-radius: 5px; padding: 1px 6px">/</span>
+      </div>
+
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center">
+        <button aria-pressed="true" style="height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid #0F6B63; background: #0F6B63; color: #FFFFFF; font: inherit; font-weight: 500; cursor: pointer">Alle kilder · 13</button>
+        <button aria-pressed="false" style="height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid #CFD5CF; background: #FFFFFF; color: #3D4845; font: inherit; cursor: pointer">Folkehelseinstituttet</button>
+        <button aria-pressed="false" style="height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid #CFD5CF; background: #FFFFFF; color: #3D4845; font: inherit; cursor: pointer">Helsedirektoratet</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+        <a href="FHI-2-Tabell.dc.html" style="text-decoration: none; color: #15201E; background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+          <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 600; font-size: 15px">Abortregisteret</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3D4845; background: #EEF0EC; border-radius: 6px; padding: 2px 6px">ABR</span></span>
+          <span style="font-size: 13px; color: #3D4845">Om svangerskapsbrudd i Norge fra 1979 til i dag.</span>
+          <span style="font-size: 12px; color: #5B6764; margin-top: auto">Folkehelseinstituttet</span>
+        </a>
+        <a href="FHI-2-Tabell.dc.html" style="text-decoration: none; color: #15201E; background: #FFFFFF; border: 1px solid #0F6B63; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 0 0 3px #CFE7E2">
+          <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 600; font-size: 15px">Dødsårsaksregisteret</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #FFFFFF; background: #0F6B63; border-radius: 6px; padding: 2px 6px">DAAR</span></span>
+          <span style="font-size: 13px; color: #3D4845">Om dødsfall og dødsårsaker i Norge fra 1951 til i dag.</span>
+          <span style="display: flex; justify-content: space-between; margin-top: auto"><span style="font-size: 12px; color: #5B6764">Folkehelseinstituttet</span><span style="font-size: 13px; color: #0F6B63; font-weight: 600">Velg →</span></span>
+        </a>
+        <a href="FHI-2-Tabell.dc.html" style="text-decoration: none; color: #15201E; background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+          <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 600; font-size: 15px">Folkehelsestatistikk</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3D4845; background: #EEF0EC; border-radius: 6px; padding: 2px 6px">NOKKEL</span></span>
+          <span style="font-size: 13px; color: #3D4845">Befolkning, oppvekst og levekår, miljø, skader, helserelatert atferd og helsetilstand.</span>
+          <span style="font-size: 12px; color: #5B6764; margin-top: auto">Helsedirektoratet</span>
+        </a>
+        <a href="FHI-2-Tabell.dc.html" style="text-decoration: none; color: #15201E; background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+          <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 600; font-size: 15px">Grossistbasert legemiddelstatistikk</span></span>
+          <span style="font-size: 13px; color: #3D4845">Salg av legemidler fra grossister til apotek, institusjoner og dagligvare.</span>
+          <span style="font-size: 12px; color: #5B6764; margin-top: auto">Folkehelseinstituttet</span>
+        </a>
+        <a href="FHI-2-Tabell.dc.html" style="text-decoration: none; color: #15201E; background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+          <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 600; font-size: 15px">Hjerte- og karregisteret</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3D4845; background: #EEF0EC; border-radius: 6px; padding: 2px 6px">HKR</span></span>
+          <span style="font-size: 13px; color: #3D4845">Personer med sykdommer i hjertet og blodårene, og behandlingen av dem, fra 2012.</span>
+          <span style="font-size: 12px; color: #5B6764; margin-top: auto">Folkehelseinstituttet</span>
+        </a>
+        <a href="FHI-2-Tabell.dc.html" style="text-decoration: none; color: #15201E; background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+          <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 600; font-size: 15px">Kommunalt pasient- og brukerregister</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3D4845; background: #EEF0EC; border-radius: 6px; padding: 2px 6px">KPR</span></span>
+          <span style="font-size: 13px; color: #3D4845">Bruk av helse- og omsorgstjenester i kommunene.</span>
+          <span style="font-size: 12px; color: #5B6764; margin-top: auto">Folkehelseinstituttet</span>
+        </a>
+        <a href="FHI-2-Tabell.dc.html" style="text-decoration: none; color: #15201E; background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+          <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 600; font-size: 15px">Legemiddelregisteret</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3D4845; background: #EEF0EC; border-radius: 6px; padding: 2px 6px">LMR</span></span>
+          <span style="font-size: 13px; color: #3D4845">Legemidler utlevert på resept i Norge fra og med 2004.</span>
+          <span style="font-size: 12px; color: #5B6764; margin-top: auto">Folkehelseinstituttet</span>
+        </a>
+        <a href="FHI-2-Tabell.dc.html" style="text-decoration: none; color: #15201E; background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+          <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 600; font-size: 15px">Medisinsk fødselsregister</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3D4845; background: #EEF0EC; border-radius: 6px; padding: 2px 6px">MFR</span></span>
+          <span style="font-size: 13px; color: #3D4845">Svangerskap, fødsler og nyfødte i Norge fra 1967.</span>
+          <span style="font-size: 12px; color: #5B6764; margin-top: auto">Folkehelseinstituttet</span>
+        </a>
+        <a href="FHI-2-Tabell.dc.html" style="text-decoration: none; color: #15201E; background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+          <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 600; font-size: 15px">Smittsomme sykdommer</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3D4845; background: #EEF0EC; border-radius: 6px; padding: 2px 6px">MSIS</span></span>
+          <span style="font-size: 13px; color: #3D4845">Meldingspliktige sykdommer fra 1977 til i dag.</span>
+          <span style="font-size: 12px; color: #5B6764; margin-top: auto">Folkehelseinstituttet</span>
+        </a>
+        <a href="FHI-2-Tabell.dc.html" style="text-decoration: none; color: #15201E; background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+          <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 600; font-size: 15px">Vaksinasjonsregisteret</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3D4845; background: #EEF0EC; border-radius: 6px; padding: 2px 6px">SYSVAK</span></span>
+          <span style="font-size: 13px; color: #3D4845">Barne- og voksenvaksinasjonsprogrammet.</span>
+          <span style="font-size: 12px; color: #5B6764; margin-top: auto">Folkehelseinstituttet</span>
+        </a>
+        <a href="FHI-2-Tabell.dc.html" style="text-decoration: none; color: #15201E; background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+          <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 600; font-size: 15px">Norsk pasientregister</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3D4845; background: #EEF0EC; border-radius: 6px; padding: 2px 6px">NPR</span></span>
+          <span style="font-size: 13px; color: #3D4845">Somatikk, psykisk helsevern og tverrfaglig spesialisert rusbehandling.</span>
+          <span style="font-size: 12px; color: #5B6764; margin-top: auto">Folkehelseinstituttet</span>
+        </a>
+        <a href="FHI-2-Tabell.dc.html" style="text-decoration: none; color: #15201E; background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+          <span style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 600; font-size: 15px">Skadedyrstatistikken</span></span>
+          <span style="font-size: 13px; color: #3D4845">Hvor ofte utvalgte skadedyr bekjempes, med sesongvariasjon.</span>
+          <span style="font-size: 12px; color: #5B6764; margin-top: auto">Folkehelseinstituttet</span>
+        </a>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":940}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

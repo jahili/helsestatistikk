@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<title>FHI – velg variabler</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F2}
+a{color:#0F6B63}a:hover{color:#0A4F49}
+</style>
+</helmet>
+<div style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; color: #15201E; background: #F4F5F2; min-height: 940px; display: flex; flex-direction: column; font-size: 14px; line-height: 1.45">
+
+  <header style="height: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 20px; background: #FFFFFF; border-bottom: 1px solid #E1E4DF; flex-wrap: wrap">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="#0F6B63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 C6 5 6 9 6 11 C6 13 4 15 3 15 C4 15 6 17 6 19 C6 21 6 25 10 25"></path><path d="M20 5 C24 5 24 9 24 11 C24 13 26 15 27 15 C26 15 24 17 24 19 C24 21 24 25 20 25"></path><path d="M12 19 V14 M15 19 V11 M18 19 V16" stroke-opacity="0.55"></path></svg>
+      <div style="display: flex; flex-direction: column">
+        <span style="font-weight: 700; font-size: 16px; letter-spacing: -0.01em">FHI API Query Builder</span>
+        <span style="font-size: 12px; color: #5B6764">Spørringer mot FHIs åpne statistikk-API · JSON, Power Query og CSV</span>
+      </div>
+    </div>
+    <nav style="display: flex; align-items: center; gap: 6px">
+      <a href="#" style="padding: 8px 12px; text-decoration: none; color: #3D4845; font-weight: 500">Om verktøyet</a>
+      <a href="#" style="padding: 8px 12px; text-decoration: none; color: #3D4845; font-weight: 500">API-dokumentasjon</a>
+      <a href="#" style="padding: 8px 12px; text-decoration: none; color: #3D4845; font-weight: 500">GitHub</a>
+      <button aria-label="Bytt til mørkt tema" style="width: 40px; height: 40px; border: 1px solid #E1E4DF; background: #FFFFFF; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3D4845" stroke-width="2" stroke-linecap="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg></button>
+    </nav>
+  </header>
+
+  <div style="flex: 1; display: flex; flex-wrap: wrap; min-height: 0">
+
+    <aside style="flex: 1 1 340px; max-width: 360px; background: #FFFFFF; border-right: 1px solid #E1E4DF; display: flex; flex-direction: column">
+      <div style="flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 600; color: #5B6764; letter-spacing: 0.04em; padding: 0 12px 8px">DIN SPØRRING</span>
+        <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px">
+          <li style="display: flex; gap: 12px; padding: 12px; border-radius: 12px">
+            <span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; background: #CFE7E2; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F6B63" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></span>
+            <span style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0"><span style="font-weight: 600; font-size: 15px">Kilde</span><span style="font-size: 13px; color: #3D4845">Dødsårsaksregisteret <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5B6764">daar</span></span></span>
+            <a href="FHI-1-Kilde.dc.html" style="font-size: 13px; font-weight: 500; align-self: flex-start; padding: 2px 0">Endre</a>
+          </li>
+          <li style="display: flex; gap: 12px; padding: 12px; border-radius: 12px">
+            <span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; background: #CFE7E2; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F6B63" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></span>
+            <span style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0"><span style="font-weight: 600; font-size: 15px">Tabell</span><span style="font-size: 13px; color: #3D4845">Dødsfall totalt etter alder og kjønn <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5B6764">643</span></span></span>
+            <a href="FHI-2-Tabell.dc.html" style="font-size: 13px; font-weight: 500; align-self: flex-start; padding: 2px 0">Endre</a>
+          </li>
+          <li style="display: flex; gap: 12px; padding: 12px; border-radius: 12px; background: #E8F3F1">
+            <span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; background: #0F6B63; color: #FFFFFF; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: flex; align-items: center; justify-content: center">03</span>
+            <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 15px">Variabler</span><span style="font-size: 13px; color: #3D4845">2 av 5 dimensjoner filtrert</span></span>
+          </li>
+          <li style="display: flex; gap: 12px; padding: 12px; border-radius: 12px">
+            <span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; border: 1px solid #CFD5CF; color: #5B6764; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: flex; align-items: center; justify-content: center">04</span>
+            <span style="font-weight: 600; font-size: 15px; color: #5B6764">Spørring</span>
+          </li>
+        </ol>
+      </div>
+      <div style="position: sticky; bottom: 0; padding: 16px 20px 20px; border-top: 1px solid #E1E4DF; background: #FAFBF9; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 13px; color: #3D4845">Svarformat</span>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 3px; background: #EEF0EC; border-radius: 10px">
+            <button aria-pressed="true" style="height: 34px; border: 0; border-radius: 8px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(21,32,30,0.12); font: inherit; font-size: 13px; font-weight: 600; color: #15201E; cursor: pointer">JSON-stat2</button>
+            <button aria-pressed="false" style="height: 34px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 13px; color: #3D4845; cursor: pointer">CSV · navn</button>
+            <button aria-pressed="false" style="height: 34px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 13px; color: #3D4845; cursor: pointer">CSV · koder</button>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 10px 12px; background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 10px">
+          <span style="font-size: 13px; color: #3D4845">Forventet antall rader</span>
+          <span style="display: flex; flex-direction: column; align-items: flex-end"><span style="font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 500">630</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5B6764">10 × 3 × 7 × 3 × 1</span></span>
+        </div>
+        <a href="FHI-4-Sporring.dc.html" style="height: 48px; border-radius: 12px; background: #0F6B63; color: #FFFFFF; text-decoration: none; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px">Generer spørring <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+      </div>
+    </aside>
+
+    <main style="flex: 999 1 560px; min-width: 0; padding: 32px 40px 40px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #0F6B63; font-weight: 500">03 · VARIABLER</span>
+          <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em">Dødsfall totalt etter alder og kjønn</h1>
+          <span style="color: #5B6764">Alt er valgt som standard. Snevre inn bare det du trenger.</span>
+        </div>
+        <button style="height: 36px; padding: 0 12px; border: 1px solid #CFD5CF; border-radius: 10px; background: #FFFFFF; font: inherit; color: #3D4845; cursor: pointer">Nullstill alle</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start">
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-weight: 600; font-size: 15px">Dødsår <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400; color: #5B6764">DAAR</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #0F6B63">10 / 75</span></div>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 3px; background: #EEF0EC; border-radius: 10px">
+            <button aria-pressed="false" style="height: 34px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 13px; color: #3D4845; cursor: pointer">Alle</button>
+            <button aria-pressed="false" style="height: 34px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 13px; color: #3D4845; cursor: pointer">Velg verdier</button>
+            <button aria-pressed="true" style="height: 34px; border: 0; border-radius: 8px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(21,32,30,0.12); font: inherit; font-size: 13px; font-weight: 600; color: #15201E; cursor: pointer">Siste X år</button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px">
+            <label for="sistex" style="font-size: 13px; color: #3D4845">Antall år</label>
+            <div style="display: flex; align-items: center; border: 1px solid #CFD5CF; border-radius: 10px; overflow: hidden">
+              <button aria-label="Færre år" style="width: 40px; height: 40px; border: 0; background: #FAFBF9; font-size: 18px; cursor: pointer; color: #15201E">−</button>
+              <input id="sistex" value="10" style="width: 48px; height: 40px; border: 0; border-left: 1px solid #E1E4DF; border-right: 1px solid #E1E4DF; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #15201E">
+              <button aria-label="Flere år" style="width: 40px; height: 40px; border: 0; background: #FAFBF9; font-size: 18px; cursor: pointer; color: #15201E">+</button>
+            </div>
+          </div>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-weight: 600; font-size: 15px">Kjønn <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400; color: #5B6764">KJONN</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5B6764">3 / 3</span></div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 3px; background: #EEF0EC; border-radius: 10px">
+            <button aria-pressed="true" style="height: 34px; border: 0; border-radius: 8px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(21,32,30,0.12); font: inherit; font-size: 13px; font-weight: 600; color: #15201E; cursor: pointer">Alle</button>
+            <button aria-pressed="false" style="height: 34px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 13px; color: #3D4845; cursor: pointer">Velg verdier</button>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap">
+            <span style="height: 28px; padding: 0 10px; border-radius: 999px; background: #EEF0EC; color: #3D4845; font-size: 13px; display: flex; align-items: center">Begge kjønn</span>
+            <span style="height: 28px; padding: 0 10px; border-radius: 999px; background: #EEF0EC; color: #3D4845; font-size: 13px; display: flex; align-items: center">Menn</span>
+            <span style="height: 28px; padding: 0 10px; border-radius: 999px; background: #EEF0EC; color: #3D4845; font-size: 13px; display: flex; align-items: center">Kvinner</span>
+          </div>
+        </section>
+
+        <section style="grid-column: 1 / -1; background: #FFFFFF; border: 1px solid #0F6B63; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-weight: 600; font-size: 15px">Dødsårsak <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400; color: #5B6764">EU_SHORT_CODE</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #0F6B63">3 / 91</span></div>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center">
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 3px; background: #EEF0EC; border-radius: 10px; flex: 0 0 360px; max-width: 100%">
+              <button aria-pressed="false" style="height: 34px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 13px; color: #3D4845; cursor: pointer">Alle</button>
+              <button aria-pressed="true" style="height: 34px; border: 0; border-radius: 8px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(21,32,30,0.12); font: inherit; font-size: 13px; font-weight: 600; color: #15201E; cursor: pointer">Velg verdier</button>
+              <button aria-pressed="false" style="height: 34px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 13px; color: #3D4845; cursor: pointer">Wildcard</button>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; flex: 1">
+              <span style="height: 28px; padding: 0 6px 0 10px; border-radius: 999px; background: #0F6B63; color: #FFFFFF; font-size: 13px; display: flex; align-items: center; gap: 4px">Alle dødsårsaker <button aria-label="Fjern" style="width: 20px; height: 20px; border: 0; background: none; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></span>
+              <span style="height: 28px; padding: 0 6px 0 10px; border-radius: 999px; background: #0F6B63; color: #FFFFFF; font-size: 13px; display: flex; align-items: center; gap: 4px">Ondartede svulster <button aria-label="Fjern" style="width: 20px; height: 20px; border: 0; background: none; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></span>
+              <span style="height: 28px; padding: 0 6px 0 10px; border-radius: 999px; background: #0F6B63; color: #FFFFFF; font-size: 13px; display: flex; align-items: center; gap: 4px">Sirkulasjonssystemet <button aria-label="Fjern" style="width: 20px; height: 20px; border: 0; background: none; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></span>
+            </div>
+          </div>
+          <div style="height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid #CFD5CF; border-radius: 10px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6764" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+            <label for="sok3" style="position: absolute; width: 1px; height: 1px; overflow: hidden">Søk i dødsårsaker</label>
+            <input id="sok3" placeholder="Søk i 91 dødsårsaker eller kode" style="border: 0; outline: none; font: inherit; flex: 1; color: #15201E; background: transparent">
+          </div>
+          <div style="border: 1px solid #E1E4DF; border-radius: 10px; max-height: 176px; overflow: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr))">
+            <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #EEF0EC"><input type="checkbox" checked="" style="width: 16px; height: 16px; accent-color: #0F6B63"><span style="flex: 1">Alle dødsårsaker</span></label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #EEF0EC"><input type="checkbox" style="width: 16px; height: 16px; accent-color: #0F6B63"><span style="flex: 1">Infeksjonssykdommer</span></label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #EEF0EC"><input type="checkbox" checked="" style="width: 16px; height: 16px; accent-color: #0F6B63"><span style="flex: 1">Ondartede svulster</span></label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #EEF0EC"><input type="checkbox" style="width: 16px; height: 16px; accent-color: #0F6B63"><span style="flex: 1">Diabetes</span></label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #EEF0EC"><input type="checkbox" checked="" style="width: 16px; height: 16px; accent-color: #0F6B63"><span style="flex: 1">Sirkulasjonssystemet</span></label>
+            <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #EEF0EC"><input type="checkbox" style="width: 16px; height: 16px; accent-color: #0F6B63"><span style="flex: 1">Åndedrettssystemet</span></label>
+          </div>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-weight: 600; font-size: 15px">Alder <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400; color: #5B6764">ALDER</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5B6764">7 / 7</span></div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 3px; background: #EEF0EC; border-radius: 10px">
+            <button aria-pressed="true" style="height: 34px; border: 0; border-radius: 8px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(21,32,30,0.12); font: inherit; font-size: 13px; font-weight: 600; color: #15201E; cursor: pointer">Alle</button>
+            <button aria-pressed="false" style="height: 34px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 13px; color: #3D4845; cursor: pointer">Velg verdier</button>
+          </div>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E1E4DF; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-weight: 600; font-size: 15px">Måltall <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400; color: #5B6764">MEASURE_TYPE</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5B6764">1 / 1</span></div>
+          <span style="font-size: 13px; color: #5B6764">Bare én verdi, tas alltid med.</span>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":940}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
