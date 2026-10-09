@@ -524,3 +524,63 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
     font-weight: 500;
     box-shadow: 0 6px 20px rgba(21, 32, 30, 0.2);
 }
+
+/* ---------- Lister (felles) ---------- */
+.list-card {
+    list-style: none;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    background: var(--surface);
+}
+.list-card > li + li { border-top: 1px solid var(--fill); }
+.list-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    padding: 11px 16px;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+}
+.list-row:hover { background: var(--surface-2); }
+.row-date { flex-shrink: 0; font-size: 12px; color: var(--text-help); white-space: nowrap; }
+.row-arrow { flex-shrink: 0; color: var(--text-help); }
+.list-row:hover .row-arrow { color: var(--accent); }
+.empty-text { padding: 16px 0; color: var(--text-help); }
+
+/* ---------- Steg 1 – Kilde ---------- */
+.source-grid {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+.source-grid > li { display: flex; }
+.source-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    color: var(--text);
+    text-align: left;
+    transition: border-color 0.12s, box-shadow 0.12s;
+}
+.source-card:hover { border-color: var(--accent); }
+.source-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.source-card-head .badge { font-size: 11px; min-width: 0; }
+.source-card-desc { font-size: 13px; color: var(--text-muted); }
+.source-card-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin-top: auto; }
+.source-card-publisher { font-size: 12px; color: var(--text-help); }
+.source-card-cta { font-size: 13px; font-weight: 600; color: var(--accent); white-space: nowrap; visibility: hidden; }
+.source-card:hover .source-card-cta,
+.source-card:focus-visible .source-card-cta,
+.source-card.card-selected .source-card-cta { visibility: visible; }
+
+.search-results { display: flex; flex-direction: column; gap: 10px; }
+.search-hit-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.search-hit-title { font-weight: 500; }
+.search-hit-meta { display: flex; align-items: baseline; gap: 6px; font-size: 12px; color: var(--text-help); }

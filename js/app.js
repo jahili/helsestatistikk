@@ -9,7 +9,7 @@ import { formatNumber } from './lib/format.mjs';
 import { previewToCsv, csvFileName } from './lib/preview.mjs';
 import { Header, Sidebar, StepDots, Credits } from './components/Layout.mjs';
 import { Button, Icon } from './components/ui.mjs';
-import { renderSourceSelection } from './components/SourceSelection.mjs';
+import { renderSourceStep, renderSourceActions } from './components/SourceSelection.mjs';
 import { renderTableSelection } from './components/TableSelection.mjs';
 import { renderDimensionConfiguration } from './components/DimensionConfiguration.mjs';
 import { renderQueryResult } from './components/QueryResult.mjs';
@@ -510,15 +510,8 @@ function FHIQueryBuilder() {
     let actions = null;
     let tip = null;
     if (step === 1) {
-        main = renderSourceSelection(
-            sources, tables, globalSearch, loading, error,
-            selectSource, selectSourceAndTable, setGlobalSearch,
-            getSourceIcon, boundGetTableLabel, Icons
-        );
-        actions = selectedSource
-            ? h(Button, { variant: 'primary', size: 'lg', block: true, onClick: function() { setStep(2); }, trailingIcon: Icon.arrowRight() },
-                'Fortsett med ' + (selectedSource.title || selectedSource.name))
-            : h(Button, { variant: 'primary', size: 'lg', block: true, disabled: true }, 'Velg en kilde for å fortsette');
+        main = renderSourceStep(ctx);
+        actions = renderSourceActions(ctx);
         tip = 'Vet du hva tabellen heter? Søk på tvers av alle kilder og hopp rett til steg 03.';
     } else if (step === 2) {
         main = renderTableSelection(
