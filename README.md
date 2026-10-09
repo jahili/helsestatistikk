@@ -183,13 +183,6 @@ Hvis noe går galt:
 - Safari (versjon 14+)
 - Fungerer på mobiltelefoner og nettbrett
 
-## Kontakt og tilbakemelding
-
-Utviklet av Akershus analyse, en del av Akershus fylkeskommune.
-
-- **Kontakt**: janli@afk.no
-- **Om Akershus analyse**: https://akershusanalyse.no/
-- **Om Akershus fylkeskommune**: https://afk.no/
 
 ## Lisens
 Denne programvaren er utviklet av Jan Hiroshi Lintvedt / Akershus fylkeskommune og deles som åpen kildekode
