@@ -92,8 +92,9 @@ Alt kjører i nettleseren din - ingen backend-server er nødvendig.
 
 - `index.html` — HTML-skall, laster `js/app.js` som ES-modul
 - `js/app.js` — hovedkomponent: state, effekter og sammensetning av skjermbildene
-- `js/lib/` — ren logikk (CSV-parsing, tabell-label-oppslag, geografi-gruppering, spørringsbygging, Power Query-kodegenerering, sikker HTML-rendering, JSON-syntax-highlighting) — hver fil har en tilhørende `*.test.mjs`
-- `js/components/` — ett skjermbilde/UI-element per fil
+- `js/lib/` — ren logikk (CSV-parsing, tabell-label-oppslag, geografi-gruppering, spørringsbygging, Power Query- og cURL-generering, forhåndsvisning/CSV-eksport, radtelling, formatering, sikker HTML-rendering, syntax-highlighting) — hver fil har en tilhørende `*.test.mjs`
+- `js/components/` — `ui.mjs` (basiskomponenter: Button, Segment, Chip, Badge, Card m.fl.), `StepList.mjs`, `Layout.mjs` (header og sidekolonne) og ett skjermbilde per steg
+- `styles/app.css` — tokens, komponenter, layout, responsivt og mørkt tema (designspråk A, se `design/fhi-redesign.md`)
 
 ### Kjøre lokalt
 

@@ -25,7 +25,7 @@ export function Header(props) {
         ),
         h('nav', { className: 'header-nav', 'aria-label': 'Lenker' },
             externalLink(LINKS.about, 'Om verktøyet', 'header-link'),
-            externalLink(LINKS.apiDocs, 'API-dokumentasjon', 'header-link'),
+            externalLink(LINKS.apiDocs, 'API-dokumentasjon', 'header-link header-link-secondary'),
             externalLink(LINKS.github, 'GitHub', 'header-link'),
             h('button', {
                 type: 'button',
@@ -39,11 +39,21 @@ export function Header(props) {
 }
 
 export function Credits(props) {
-    return h('p', { className: 'credits' + (props.className ? ' ' + props.className : '') },
+    const text = h('p', { className: 'credits' + (props.className && !props.showLinks ? ' ' + props.className : '') },
         'Data fra ', externalLink('https://statistikk-data.fhi.no', 'FHI Statistikk'),
         ' · Utarbeidet av ', externalLink('https://akershusanalyse.no/', 'Akershus analyse'),
         ', ', externalLink('https://afk.no/', 'Akershus fylkeskommune'),
         ' · ', h('a', { href: 'mailto:janli@afk.no' }, 'janli@afk.no')
+    );
+    if (!props.showLinks) return text;
+    // På smale skjermer er header-lenkene skjult, så de vises her i stedet.
+    return h('footer', { className: 'mobile-footer ' + (props.className || '') },
+        h('nav', { className: 'mobile-footer-links', 'aria-label': 'Lenker' },
+            externalLink(LINKS.about, 'Om verktøyet'),
+            externalLink(LINKS.apiDocs, 'API-dokumentasjon'),
+            externalLink(LINKS.github, 'GitHub')
+        ),
+        text
     );
 }
 

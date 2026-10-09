@@ -957,3 +957,185 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
 .side-actions { display: flex; flex-direction: column; gap: 10px; }
 .start-over { align-self: center; padding: 6px; }
 .mobile-actions { flex-direction: column; gap: 10px; }
+
+/* ---------- Responsivt ---------- */
+@media (min-width: 768px) {
+    /* Sidekolonne og innhold ligger alltid side om side på brede skjermer. */
+    .app-body { flex-wrap: nowrap; }
+}
+
+@media (max-width: 1180px) {
+    .source-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1000px) {
+    .dim-grid { grid-template-columns: minmax(0, 1fr); }
+    .header-link-secondary { display: none; }
+}
+
+@media (max-width: 767px) {
+    .desktop-only { display: none !important; }
+    .mobile-only { display: block; }
+    .mobile-actions.mobile-only { display: flex; }
+
+    .app-header { padding: 0 16px; }
+    .brand-subtitle,
+    .header-link { display: none; }
+
+    .app-body { flex-direction: column; }
+    .sidebar { flex: none; max-width: none; border-right: 0; background: none; }
+    .sidebar-body { display: none; }
+    /* Primærhandlingen i en fast bunnlinje */
+    .sidebar-actions {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 40;
+        min-height: 52px;
+        padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+        gap: 8px;
+        box-shadow: 0 -4px 16px rgba(21, 32, 30, 0.08);
+    }
+    .sidebar-actions .btn-lg { min-height: 44px; }
+
+    .content { flex: 1 1 auto; gap: 18px; padding: 16px 16px 104px; }
+
+    .step-dots {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--line);
+    }
+    .step-dots ol { list-style: none; display: flex; align-items: center; gap: 6px; }
+    .step-dot { display: flex; align-items: center; }
+    .step-dot + .step-dot::before {
+        content: '';
+        width: 14px;
+        height: 1px;
+        margin-right: 6px;
+        background: var(--line-input);
+    }
+    .step-dot.step-done + .step-dot::before,
+    .step-dot.step-active + .step-dot::before { background: var(--accent); }
+    .step-dot button,
+    .step-dot > span {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        margin: -9px;
+        padding: 0;
+        border: 0;
+        background: none;
+    }
+    .step-dot.step-active .step-circle { box-shadow: 0 0 0 3px var(--accent-ring); }
+    .step-dots-label { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--accent); white-space: nowrap; }
+
+    .step-heading h1 { font-size: 24px; }
+
+    .source-grid,
+    .dim-grid,
+    .value-grid { grid-template-columns: minmax(0, 1fr); }
+
+    .table-step-detail { position: static; max-width: none; }
+    .table-row-indent { padding-left: 28px; }
+    .row-date { display: none; }
+
+    .picker-toolbar { flex-wrap: wrap; }
+    .geo-bulk { display: none; }
+
+    .query-side { flex-basis: 100%; }
+    .preview-empty { padding: 20px; }
+
+    .toast { bottom: 84px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; }
+}
+
+/* ---------- Mørkt tema ---------- */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #0F1716;
+        --surface: #16211F;
+        --surface-2: #1B2725;
+        --text: #E7ECEA;
+        --text-muted: #BAC6C3;
+        --text-help: #93A19E;
+        --line: #2A3633;
+        --line-input: #3D4B48;
+        --fill: #22302D;
+        --accent: #4FB8A8;
+        --accent-hover: #72CDBF;
+        --accent-surface: #163631;
+        --accent-ring: #1F4D46;
+        --on-accent: #0B1413;
+        --disabled-bg: #26322F;
+        --disabled-text: #93A19E;
+        --warning-bg: #33290F;
+        --warning-line: #6B5524;
+        --warning-text: #F2C98A;
+        --danger-bg: #3A1C18;
+        --danger-line: #7A3A31;
+        --danger-text: #F4B4AA;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+        --shadow-seg: 0 1px 2px rgba(0, 0, 0, 0.45);
+        --overlay: rgba(0, 0, 0, 0.6);
+        --code-bg: #0B1211;
+        --code-line: #22302D;
+        --code-border: #33413E;
+        color-scheme: dark;
+    }
+}
+:root[data-theme="dark"] {
+    --bg: #0F1716;
+    --surface: #16211F;
+    --surface-2: #1B2725;
+    --text: #E7ECEA;
+    --text-muted: #BAC6C3;
+    --text-help: #93A19E;
+    --line: #2A3633;
+    --line-input: #3D4B48;
+    --fill: #22302D;
+    --accent: #4FB8A8;
+    --accent-hover: #72CDBF;
+    --accent-surface: #163631;
+    --accent-ring: #1F4D46;
+    --on-accent: #0B1413;
+    --disabled-bg: #26322F;
+    --disabled-text: #93A19E;
+    --warning-bg: #33290F;
+    --warning-line: #6B5524;
+    --warning-text: #F2C98A;
+    --danger-bg: #3A1C18;
+    --danger-line: #7A3A31;
+    --danger-text: #F4B4AA;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-seg: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --overlay: rgba(0, 0, 0, 0.6);
+    --code-bg: #0B1211;
+    --code-line: #22302D;
+    --code-border: #33413E;
+    color-scheme: dark;
+}
+/* Segmentets aktive knapp løftes litt mer i mørkt tema */
+:root[data-theme="dark"] .segment-btn[aria-pressed="true"] { background: var(--line-input); }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .segment-btn[aria-pressed="true"] { background: var(--line-input); }
+}
+
+.mobile-footer { flex-direction: column; gap: 8px; padding-top: 16px; border-top: 1px solid var(--line); }
+.mobile-footer.mobile-only { display: none; }
+.mobile-footer-links { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; font-weight: 500; }
+@media (max-width: 767px) {
+    .mobile-footer.mobile-only { display: flex; }
+}
+:root[data-theme="dark"] .code-block { box-shadow: 0 0 0 1px var(--line); }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .code-block { box-shadow: 0 0 0 1px var(--line); }
+}

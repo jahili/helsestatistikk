@@ -549,7 +549,7 @@ function FHIQueryBuilder() {
             h('main', { id: 'main-content', ref: mainRef, tabIndex: -1, className: 'content content-step' + step, 'aria-label': 'Hovedinnhold' },
                 h(StepDots, { step: step, items: stepItems }),
                 main,
-                h(Credits, { className: 'mobile-only' })
+                h(Credits, { className: 'mobile-only', showLinks: true })
             )
         ),
         h('div', { className: 'toast', role: 'status', 'aria-live': 'polite' },
