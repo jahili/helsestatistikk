@@ -1,0 +1,40 @@
+name: Sjekk tabell-labels mot FHI-API-et
+
+on:
+  schedule:
+    # Mandager kl. 05:00 UTC
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - id: check
+        run: node scripts/check-labels.mjs report.md
+      - name: Opprett, oppdater eller lukk issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANGED: ${{ steps.check.outputs.changed }}
+        run: |
+          LABEL="tabell-labels"
+          TITLE="Tabell-labels er ute av synk med FHI-API-et"
+          NUM=$(gh issue list --state open --label "$LABEL" --json number -q '.[0].number')
+          if [ "$CHANGED" = "true" ]; then
+            if [ -n "$NUM" ]; then
+              gh issue edit "$NUM" --body-file report.md
+            else
+              gh label create "$LABEL" --color 0F6B63 --description "Label-filen må oppdateres" --force
+              gh issue create --title "$TITLE" --body-file report.md --label "$LABEL"
+            fi
+          elif [ -n "$NUM" ]; then
+            gh issue close "$NUM" --comment "Label-filen er i synk med API-et igjen."
+          fi
