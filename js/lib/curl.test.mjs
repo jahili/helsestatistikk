@@ -17,3 +17,8 @@ test('generateCurlCommand escaper enkeltfnutter', () => {
 test('generateCurlCommand uten spørring gir tom streng', () => {
     assert.equal(generateCurlCommand(null, 'u', 's', 't'), '');
 });
+
+test('generateCurlCommand escaper også URL-en', () => {
+    const cmd = generateCurlCommand({}, 'u', "x'; rm -rf ~; '", 't');
+    assert.ok(cmd.startsWith("curl -X POST 'u/x'\''; rm -rf ~; '\''/Table/t/data'"));
+});

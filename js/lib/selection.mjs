@@ -1,8 +1,12 @@
 // Ren logikk for hvor mange verdier en dimensjonskonfigurasjon gir.
 // Brukes til tellere og «forventet antall rader», endrer ikke spørringen.
 
+// Tidsdimensjon: koden er AAR, eller et ord i navnet ender på «år» (År, Dødsår, Skoleår).
+// «Dødsårsak» skal ikke regnes med, så vi ser på hele ord.
 export function isTimeDimension(dimension) {
-    return dimension.code === 'AAR' || Boolean(dimension.label && dimension.label.toLowerCase().includes('år'));
+    if (dimension.code === 'AAR') return true;
+    const words = String(dimension.label || '').toLowerCase().split(/[^a-zæøå0-9]+/);
+    return words.some(function(w) { return w.length >= 2 && w.slice(-2) === 'år'; });
 }
 
 export function categoryCodes(dimension) {

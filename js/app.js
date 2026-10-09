@@ -11,7 +11,7 @@ import { Header, Sidebar, StepDots, Credits } from './components/Layout.mjs';
 import { Button, Icon } from './components/ui.mjs';
 import { renderSourceStep, renderSourceActions } from './components/SourceSelection.mjs';
 import { renderTableStep, renderTableActions } from './components/TableSelection.mjs';
-import { renderDimensionConfiguration } from './components/DimensionConfiguration.mjs';
+import { renderVariablesStep, renderVariablesActions } from './components/DimensionConfiguration.mjs';
 import { renderQueryResult } from './components/QueryResult.mjs';
 import { renderMetadataModal, closeMetadataModal as closeMetadataModalImpl } from './components/MetadataModal.mjs';
 
@@ -534,14 +534,8 @@ function FHIQueryBuilder() {
         main = renderTableStep(ctx);
         actions = renderTableActions(ctx);
     } else if (step === 3) {
-        main = renderDimensionConfiguration(
-            dimensions, queryConfig, selectedSource, selectedTable, step,
-            responseFormat, maxRowCount, loading, error, firstSentence,
-            geoSearch, expandedCounties, expandedMunicipalities,
-            updateDimensionConfig, buildFinalQuery, getGeographyGroups, boundGetTableLabel, fetchMetadata,
-            setGeoSearch, setExpandedCounties, setExpandedMunicipalities,
-            setResponseFormat, setMaxRowCount, setStep, Icons
-        );
+        main = renderVariablesStep(ctx);
+        actions = renderVariablesActions(ctx);
     } else if (step === 4) {
         main = renderQueryResult(
             finalQuery, selectedSource, selectedTable, dimensions,

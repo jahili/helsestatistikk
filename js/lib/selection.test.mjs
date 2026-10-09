@@ -10,6 +10,8 @@ test('isTimeDimension kjenner igjen år-dimensjoner', () => {
     assert.equal(isTimeDimension(year), true);
     assert.equal(isTimeDimension({ code: 'DAAR', label: 'Dødsår' }), true);
     assert.equal(isTimeDimension(sex), false);
+    assert.equal(isTimeDimension({ code: 'EU_SHORT_CODE', label: 'Dødsårsak' }), false);
+    assert.equal(isTimeDimension({ code: 'SKOLEAAR', label: 'Skoleår' }), true);
 });
 
 test('matchesWildcard', () => {

@@ -1,505 +1,399 @@
+import { Button, Segment, Chip, StepHeading, SearchField, Alert, Status, Icon } from './ui.mjs';
+import { categoryCodes, selectedCount, isTimeDimension } from '../lib/selection.mjs';
+import { formatNumber } from '../lib/format.mjs';
+
 const h = React.createElement;
+const WIDE_THRESHOLD = 20;
+const MAX_CHIPS = 30;
 
-export function renderDimensionConfiguration(
-    dimensions, queryConfig, selectedSource, selectedTable, step,
-    responseFormat, maxRowCount, loading, error, firstSentence,
-    geoSearch, expandedCounties, expandedMunicipalities,
-    updateDimensionConfig, buildFinalQuery, getGeographyGroups, getTableLabel, fetchMetadata,
-    setGeoSearch, setExpandedCounties, setExpandedMunicipalities,
-    setResponseFormat, setMaxRowCount, setStep, Icons
-) {
-    return h('div', { className: 'space-y-4' },
-        selectedTable && h('div', { className: 'mb-6 pb-4 border-b border-gray-200' },
-            h('h2', { className: 'flex items-center gap-2 mb-2' }, getTableLabel(selectedTable)),
-            firstSentence && h('p', { style: { color: '#4b5563', lineHeight: 1.6 }, className: 'text-lg' }, firstSentence)
-        ),
-        h('div', { className: 'card' },
-            h('div', { className: 'mb-4' },
-                h('h2', { className: 'flex items-center gap-2 mb-2' },
-                    h(Icons.Filter),
-                    'Konfigurer dimensjoner',
-                    h('button', {
-                        className: 'btn btn-icon',
-                        onClick: function() { fetchMetadata(selectedSource.id, selectedTable.tableId, { openModal: true }); },
-                        title: 'Se tabell informasjon',
-                        'aria-label': 'Se tabell informasjon',
-                        style: { marginLeft: 'auto', padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', height: 'auto', minWidth: 'auto' }
-                    },
-                        h('svg', { viewBox: '0 0 24 24', width: '18', height: '18', fill: 'none', stroke: 'currentColor', strokeWidth: '2' },
-                            h('circle', { cx: '12', cy: '12', r: '10' }),
-                            h('text', { x: '12', y: '16', textAnchor: 'middle', fontSize: '12', fill: 'currentColor' }, 'i')
-                        ),
-                        h('span', { style: { color: '#374151' }, className: 'table-cell' }, 'Informasjon om tabellen')
-                    )
-                ),
-                h('p', { className: 'text-gray-600' }, 'Velg verdier for hver dimensjon i tabellen')
-            ),
-            loading && h('p', { className: 'text-gray-500 mb-4', role: 'status', 'aria-live': 'polite' }, 'Laster dimensjoner...'),
-            error && h('div', { className: 'alert mb-4', role: 'alert', 'aria-live': 'assertive' }, error),
-            h('div', { className: 'flex gap-6 mb-4 items-start' },
-                h('div', { style: { flex: 1 } },
-                    h('label', { className: 'label' }, 'Response format'),
-                    h('div', { className: 'flex gap-4 mt-2' },
-                        h('label', { className: 'flex items-center gap-2' },
-                            h('input', {
-                                type: 'radio',
-                                className: 'radio',
-                                checked: responseFormat === 'json-stat2',
-                                onChange: function() { setResponseFormat('json-stat2'); },
-                                'aria-label': 'Response format: JSON-stat2'
-                            }),
-                            h('span', { className: 'text-sm' }, 'JSON-stat2')
-                        ),
-                        h('label', { className: 'flex items-center gap-2' },
-                            h('input', {
-                                type: 'radio',
-                                className: 'radio',
-                                checked: responseFormat === 'csv2',
-                                onChange: function() { setResponseFormat('csv2'); },
-                                'aria-label': 'Response format: CSV2 med labels'
-                            }),
-                            h('span', { className: 'text-sm' }, 'CSV2 med labels')
-                        ),
-                        h('label', { className: 'flex items-center gap-2' },
-                            h('input', {
-                                type: 'radio',
-                                className: 'radio',
-                                checked: responseFormat === 'csv3',
-                                onChange: function() { setResponseFormat('csv3'); },
-                                'aria-label': 'Response format: CSV3 med koder'
-                            }),
-                            h('span', { className: 'text-sm' }, 'CSV3 med koder')
-                        )
-                    )
-                ),
-                h('div', { style: { width: '200px' } },
-                    h('label', { className: 'label', htmlFor: 'max-row-count' }, 'Max antall rader'),
-                    h('input', {
-                        id: 'max-row-count',
-                        type: 'number',
-                        className: 'input',
-                        value: maxRowCount,
-                        onChange: function(e) { setMaxRowCount(e.target.value); },
-                        placeholder: 'Ubegrenset',
-                        'aria-label': 'Maksimum antall rader som skal vises'
-                    })
-                )
-            )
-        ),
-        (!loading && dimensions && Array.isArray(dimensions)) && h('div', { className: 'dimensions-grid' },
-            dimensions.map(function(dimension) {
-            const config = queryConfig[dimension.code] || { filter: 'all', values: ['*'], selectedCategories: [] };
-            const isTimeVariable = dimension.code === 'AAR' || (dimension.label && dimension.label.toLowerCase().includes('år'));
+function labelOf(dimension, code) {
+    return (dimension.category.label && dimension.category.label[code]) || code;
+}
 
-            // Sjekk at dimension har category og index
-            if (!dimension.category || !dimension.category.index) {
-                console.error('Dimension mangler category eller index:', dimension);
-                return h('div', { key: dimension.code, className: 'dimension-card' },
-                    h('div', { className: 'alert' },
-                        'Dimensjon ' + (dimension.label || dimension.code) + ' har ikke riktig struktur'
-                    )
-                );
-            }
+function currentMode(ctx, dimension, config) {
+    if (config.filter === 'all' && ctx.wildcardDims[dimension.code]) return 'wildcard';
+    return config.filter;
+}
 
-            return h('div', { key: dimension.code, className: 'dimension-card' },
-                h('div', { className: 'flex items-center justify-between gap-2 mb-2' },
-                    h('h3', { className: 'font-bold' }, dimension.label || dimension.code),
-                    h('p', { className: 'text-xs text-gray-600' },
-                        'Dimensjon: ' + dimension.code + ' (' + dimension.category.index.length + ' kategorier)'
-                    )
+function setMode(ctx, dimension, mode) {
+    const code = dimension.code;
+    const setWildcard = function(on) {
+        ctx.setWildcardDims(function(prev) { return Object.assign({}, prev, { [code]: on }); });
+    };
+    if (mode === 'all') {
+        ctx.updateDimensionConfig(code, { filter: 'all', values: ['*'] });
+        setWildcard(false);
+        ctx.setWildcardDrafts(function(prev) { return Object.assign({}, prev, { [code]: undefined }); });
+    } else if (mode === 'wildcard') {
+        ctx.updateDimensionConfig(code, { filter: 'all' });
+        setWildcard(true);
+    } else {
+        ctx.updateDimensionConfig(code, { filter: mode });
+        setWildcard(false);
+    }
+}
+
+function toggleCode(ctx, dimension, config, code, checked) {
+    const updated = checked
+        ? config.selectedCategories.concat([code])
+        : config.selectedCategories.filter(function(c) { return c !== code; });
+    ctx.updateDimensionConfig(dimension.code, { selectedCategories: updated });
+}
+
+function checkboxOption(ctx, dimension, config, item, extraClass) {
+    return h('label', { key: item.code, className: 'value-option' + (extraClass ? ' ' + extraClass : '') },
+        h('input', {
+            type: 'checkbox',
+            checked: config.selectedCategories.includes(item.code),
+            onChange: function(e) { toggleCode(ctx, dimension, config, item.code, e.target.checked); }
+        }),
+        h('span', { className: 'value-option-label' }, item.label),
+        item.label !== item.code && h('code', { className: 'code-inline' }, item.code)
+    );
+}
+
+function expandButton(expanded, label, onClick) {
+    return h('button', {
+        type: 'button',
+        className: 'icon-btn tree-toggle',
+        'aria-expanded': expanded ? 'true' : 'false',
+        'aria-label': (expanded ? 'Skjul ' : 'Vis ') + label,
+        onClick: onClick
+    }, expanded ? Icon.chevronDown(14) : Icon.chevronRight(14));
+}
+
+function toggleKey(setter, key) {
+    setter(function(prev) { return Object.assign({}, prev, { [key]: !prev[key] }); });
+}
+
+// Geografi: fylke › kommune › bydel. Utvalgslogikken er den samme som før redesignet.
+function renderGeoTree(ctx, dimension, config, geoGroups) {
+    const hierarchy = geoGroups.hierarchy;
+    const q = ctx.geoSearch.trim().toLowerCase();
+    const matches = function(item) {
+        return item.label.toLowerCase().includes(q) || item.code.toLowerCase().includes(q);
+    };
+    const filteredCounties = geoGroups.counties.filter(function(county) {
+        if (!q) return true;
+        if (matches(county)) return true;
+        const muns = hierarchy[county.code] ? hierarchy[county.code].municipalities : [];
+        return muns.some(matches);
+    });
+    const others = q ? geoGroups.others.filter(matches) : geoGroups.others;
+    const setSelected = function(updated) { ctx.updateDimensionConfig(dimension.code, { selectedCategories: updated }); };
+
+    return h('ul', { className: 'geo-tree', 'aria-label': 'Geografisk hierarki' },
+        others.map(function(other) {
+            return h('li', { key: other.code, className: 'geo-node' },
+                h('div', { className: 'geo-row' }, h('span', { className: 'tree-spacer' }), checkboxOption(ctx, dimension, config, other))
+            );
+        }),
+        filteredCounties.map(function(county) {
+            const muns = hierarchy[county.code] ? hierarchy[county.code].municipalities : [];
+            const countyDistricts = hierarchy[county.code] ? hierarchy[county.code].districts : {};
+            // Under søk vises fylket åpent, med bare treffene (eller alle kommuner hvis fylket selv traff).
+            const expanded = q ? true : Boolean(ctx.expandedCounties[county.code]);
+            const visibleMuns = q && !matches(county) ? muns.filter(matches) : muns;
+            const allMunsAndDists = muns.map(function(m) { return m.code; }).concat(
+                geoGroups.districts.filter(function(d) { return d.code.startsWith(county.code); }).map(function(d) { return d.code; })
+            );
+            const allSelected = allMunsAndDists.length > 0 && allMunsAndDists.every(function(c) { return config.selectedCategories.includes(c); });
+
+            return h('li', { key: county.code, className: 'geo-node' },
+                h('div', { className: 'geo-row geo-row-county' },
+                    muns.length > 0
+                        ? expandButton(expanded, county.label, function() { toggleKey(ctx.setExpandedCounties, county.code); })
+                        : h('span', { className: 'tree-spacer' }),
+                    checkboxOption(ctx, dimension, config, county, 'value-option-strong'),
+                    muns.length > 0 && h(Button, {
+                        variant: 'link',
+                        className: 'geo-bulk',
+                        onClick: function() {
+                            const rest = config.selectedCategories.filter(function(c) { return !allMunsAndDists.includes(c); });
+                            setSelected(allSelected ? rest : rest.concat(allMunsAndDists));
+                        }
+                    }, allSelected ? 'Fjern alle kommuner' : 'Velg alle kommuner')
                 ),
-                h('div', { className: 'space-y-4' },
-                    h('div', null,
-                        h('label', { className: 'label' }, 'Filtertype'),
-                        h('div', { className: 'space-y-2 mt-2' },
-                            h('label', { className: 'flex items-center gap-2' },
-                                h('input', {
-                                    type: 'radio',
-                                    className: 'radio',
-                                    checked: config.filter === 'item',
-                                    onChange: function() { updateDimensionConfig(dimension.code, { filter: 'item' }); }
-                                }),
-                                h('span', { className: 'text-xs' }, 'Velg spesifikke verdier')
+                expanded && visibleMuns.length > 0 && h('ul', { className: 'geo-children' },
+                    visibleMuns.map(function(mun) {
+                        const dists = countyDistricts[mun.code] || [];
+                        const munExpanded = Boolean(ctx.expandedMunicipalities[mun.code]);
+                        const allDists = dists.length > 0 && dists.every(function(d) { return config.selectedCategories.includes(d.code); });
+                        return h('li', { key: mun.code, className: 'geo-node' },
+                            h('div', { className: 'geo-row' },
+                                dists.length > 0
+                                    ? expandButton(munExpanded, 'bydeler i ' + mun.label, function() { toggleKey(ctx.setExpandedMunicipalities, mun.code); })
+                                    : h('span', { className: 'tree-spacer' }),
+                                checkboxOption(ctx, dimension, config, mun),
+                                dists.length > 0 && h(Button, {
+                                    variant: 'link',
+                                    className: 'geo-bulk',
+                                    onClick: function() {
+                                        const codes = dists.map(function(d) { return d.code; });
+                                        const rest = config.selectedCategories.filter(function(c) { return !codes.includes(c); });
+                                        setSelected(allDists ? rest : rest.concat(codes));
+                                    }
+                                }, allDists ? 'Fjern alle bydeler' : 'Velg alle bydeler')
                             ),
-                            isTimeVariable && h('label', { className: 'flex items-center gap-2' },
-                                h('input', {
-                                    type: 'radio',
-                                    className: 'radio',
-                                    checked: config.filter === 'top',
-                                    onChange: function() { updateDimensionConfig(dimension.code, { filter: 'top' }); }
-                                }),
-                                h('span', { className: 'text-xs' }, 'Siste X år')
-                            ),
-                            h('label', { className: 'flex items-center gap-2' },
-                                h('input', {
-                                    type: 'radio',
-                                    className: 'radio',
-                                    checked: config.filter === 'all',
-                                    onChange: function() { updateDimensionConfig(dimension.code, { filter: 'all', values: ['*'] }); }
-                                }),
-                                h('span', { className: 'text-xs' }, 'Alle (med wildcard)')
+                            munExpanded && dists.length > 0 && h('ul', { className: 'geo-children' },
+                                dists.map(function(dist) {
+                                    return h('li', { key: dist.code, className: 'geo-node' },
+                                        h('div', { className: 'geo-row' }, h('span', { className: 'tree-spacer' }), checkboxOption(ctx, dimension, config, dist))
+                                    );
+                                })
                             )
-                        )
-                    ),
-                    config.filter === 'item' && h('div', { className: 'space-y-2' },
-                        h('label', { className: 'label' }, 'Velg verdier'),
-                        dimension.code === 'GEO' && h('input', {
-                            type: 'text',
-                            className: 'input mb-2',
-                            placeholder: 'Søk etter fylke, kommune eller bydel...',
-                            'aria-label': 'Søk etter geografisk område (fylke, kommune eller bydel)',
-                            value: geoSearch,
-                            onChange: function(e) { setGeoSearch(e.target.value); }
-                        }),
-                        h('div', { className: 'max-h-60 overflow-y-auto border rounded p-2 space-y-1' },
-                            (function() {
-                                const geoGroups = getGeographyGroups(dimension);
-
-                                if (dimension.code === 'GEO' && geoGroups && geoGroups.hierarchy) {
-                                    const hierarchy = geoGroups.hierarchy;
-
-                                    // Filter counties based on search
-                                    const filteredCounties = geoGroups.counties.filter(function(county) {
-                                        if (geoSearch.trim() === '') return true;
-                                        const searchLower = geoSearch.toLowerCase();
-
-                                        // Check if county matches
-                                        if (county.label.toLowerCase().includes(searchLower) ||
-                                            county.code.toLowerCase().includes(searchLower)) {
-                                            return true;
-                                        }
-
-                                        // Check if any municipality in county matches
-                                        const countyMunicipalities = hierarchy[county.code] ? hierarchy[county.code].municipalities : [];
-                                        return countyMunicipalities.some(function(mun) {
-                                            return mun.label.toLowerCase().includes(searchLower) ||
-                                                   mun.code.toLowerCase().includes(searchLower);
-                                        });
-                                    });
-
-                                    return h('div', {
-                                        className: 'geo-hierarchy space-y-1',
-                                        role: 'tree',
-                                        'aria-label': 'Geografisk hierarki - velg fylker, kommuner eller bydeler'
-                                    },
-                                        geoGroups.others.length > 0 && geoGroups.others.map(function(other, otherIdx) {
-                                            return h('div', {
-                                                key: other.code,
-                                                role: 'treeitem',
-                                                'aria-level': '1',
-                                                'aria-posinset': otherIdx + 1,
-                                                'aria-setsize': geoGroups.others.length + filteredCounties.length,
-                                                className: 'flex items-center gap-2'
-                                            },
-                                                h('label', { className: 'flex items-center gap-2' },
-                                                    h('input', {
-                                                        type: 'checkbox',
-                                                        className: 'checkbox',
-                                                        checked: config.selectedCategories.includes(other.code),
-                                                        onChange: function(e) {
-                                                            const updated = e.target.checked
-                                                                ? config.selectedCategories.concat([other.code])
-                                                                : config.selectedCategories.filter(function(c) { return c !== other.code; });
-                                                            updateDimensionConfig(dimension.code, { selectedCategories: updated });
-                                                        }
-                                                    }),
-                                                    h('span', { className: 'text-sm' }, other.label + ' (' + other.code + ')')
-                                                )
-                                            );
-                                        })
-                                        ,
-                                        filteredCounties.map(function(county) {
-                                            const isExpanded = expandedCounties[county.code];
-                                            const countyMunicipalities = hierarchy[county.code] ? hierarchy[county.code].municipalities : [];
-                                            const countyDistricts = hierarchy[county.code] ? hierarchy[county.code].districts : {};
-
-                                            const allMunicipalitiesAndDistricts = countyMunicipalities.map(function(m) { return m.code; }).concat(
-                                                geoGroups.districts.filter(function(d) { return d.code.startsWith(county.code); }).map(function(d) { return d.code; })
-                                            );
-
-                                            const countySelected = config.selectedCategories.includes(county.code);
-                                            const allMunsAndDistsSelected = allMunicipalitiesAndDistricts.length > 0 &&
-                                                allMunicipalitiesAndDistricts.every(function(code) { return config.selectedCategories.includes(code); });
-
-                                            return h('div', {
-                                                key: county.code,
-                                                className: 'geo-county',
-                                                role: 'treeitem',
-                                                'aria-level': '1',
-                                                'aria-posinset': geoGroups.others.length + filteredCounties.indexOf(county) + 1,
-                                                'aria-setsize': geoGroups.others.length + filteredCounties.length,
-                                                'aria-expanded': isExpanded
-                                            },
-                                                h('div', { className: 'geo-county-header' },
-                                                    h('svg', {
-                                                        className: 'geo-chevron' + (isExpanded ? ' expanded' : ''),
-                                                        viewBox: '0 0 24 24',
-                                                        role: 'button',
-                                                        tabIndex: 0,
-                                                        'aria-label': 'Utvid/skjul ' + county.label,
-                                                        'aria-expanded': isExpanded,
-                                                        onClick: function() {
-                                                            const newExpanded = {};
-                                                            for (var key in expandedCounties) {
-                                                                newExpanded[key] = expandedCounties[key];
-                                                            }
-                                                            newExpanded[county.code] = !isExpanded;
-                                                            setExpandedCounties(newExpanded);
-                                                        },
-                                                        onKeyDown: function(e) {
-                                                            if (e.key === 'Enter' || e.key === ' ') {
-                                                                e.preventDefault();
-                                                                const newExpanded = {};
-                                                                for (var key in expandedCounties) {
-                                                                    newExpanded[key] = expandedCounties[key];
-                                                                }
-                                                                newExpanded[county.code] = !isExpanded;
-                                                                setExpandedCounties(newExpanded);
-                                                            }
-                                                        }
-                                                    },
-                                                        h('polyline', { points: '9 18 15 12 9 6', fill: 'none', stroke: 'currentColor', strokeWidth: '2' })
-                                                    ),
-                                                    h('input', {
-                                                        type: 'checkbox',
-                                                        className: 'checkbox geo-county-checkbox',
-                                                        checked: countySelected,
-                                                        'aria-label': 'Velg fylke: ' + county.label,
-                                                        onChange: function(e) {
-                                                            const updated = e.target.checked
-                                                                ? config.selectedCategories.concat([county.code])
-                                                                : config.selectedCategories.filter(function(c) { return c !== county.code; });
-                                                            updateDimensionConfig(dimension.code, { selectedCategories: updated });
-                                                        }
-                                                    }),
-                                                    h('span', { className: 'flex-1', style: { cursor: 'pointer' }, onClick: function() {
-                                                        const newExpanded = {};
-                                                        for (var key in expandedCounties) {
-                                                            newExpanded[key] = expandedCounties[key];
-                                                        }
-                                                        newExpanded[county.code] = !isExpanded;
-                                                        setExpandedCounties(newExpanded);
-                                                    } }, county.label + ' (' + county.code + ')'),
-                                                    countyMunicipalities.length > 0 && h('button', {
-                                                        className: 'geo-select-btn',
-                                                        onClick: function(e) {
-                                                            e.stopPropagation();
-                                                            const updated = allMunsAndDistsSelected
-                                                                ? config.selectedCategories.filter(function(c) {
-                                                                    return !allMunicipalitiesAndDistricts.includes(c);
-                                                                })
-                                                                : config.selectedCategories.filter(function(c) {
-                                                                    return !allMunicipalitiesAndDistricts.includes(c);
-                                                                }).concat(allMunicipalitiesAndDistricts);
-                                                            updateDimensionConfig(dimension.code, { selectedCategories: updated });
-                                                        }
-                                                    }, allMunsAndDistsSelected ? 'Fjern alle kommuner' : 'Velg alle kommuner')
-                                                ),
-                                                isExpanded && countyMunicipalities.length > 0 && h('div', { className: 'geo-municipality-list' },
-                                                    countyMunicipalities.map(function(mun) {
-                                                        const munExpanded = expandedMunicipalities[mun.code];
-                                                        const munDistricts = countyDistricts[mun.code] || [];
-                                                        const munSelected = config.selectedCategories.includes(mun.code);
-                                                        const allDistsSelected = munDistricts.length > 0 && munDistricts.every(function(d) {
-                                                            return config.selectedCategories.includes(d.code);
-                                                        });
-
-                                                        return h('div', {
-                                            key: mun.code,
-                                            className: 'geo-municipality',
-                                            role: 'treeitem',
-                                            'aria-level': '2',
-                                            'aria-posinset': countyMunicipalities.indexOf(mun) + 1,
-                                            'aria-setsize': countyMunicipalities.length,
-                                            'aria-expanded': munDistricts.length > 0 ? munExpanded : undefined
-                                        },
-                                                            h('div', { className: 'geo-municipality-header' },
-                                                                h('input', {
-                                                                    type: 'checkbox',
-                                                                    className: 'checkbox',
-                                                                    checked: munSelected,
-                                                                    onChange: function(e) {
-                                                                        const updated = e.target.checked
-                                                                            ? config.selectedCategories.concat([mun.code])
-                                                                            : config.selectedCategories.filter(function(c) { return c !== mun.code; });
-                                                                        updateDimensionConfig(dimension.code, { selectedCategories: updated });
-                                                                    }
-                                                                }),
-                                                                munDistricts.length > 0 && h('svg', {
-                                                                    className: 'geo-chevron' + (munExpanded ? ' expanded' : ''),
-                                                                    viewBox: '0 0 24 24',
-                                                                    role: 'button',
-                                                                    tabIndex: 0,
-                                                                    'aria-label': 'Utvid/skjul bydeler for ' + mun.label,
-                                                                    'aria-expanded': munExpanded,
-                                                                    onClick: function() {
-                                                                        const newExpanded = {};
-                                                                        for (var key in expandedMunicipalities) {
-                                                                            newExpanded[key] = expandedMunicipalities[key];
-                                                                        }
-                                                                        newExpanded[mun.code] = !munExpanded;
-                                                                        setExpandedMunicipalities(newExpanded);
-                                                                    },
-                                                                    onKeyDown: function(e) {
-                                                                        if (e.key === 'Enter' || e.key === ' ') {
-                                                                            e.preventDefault();
-                                                                            const newExpanded = {};
-                                                                            for (var key in expandedMunicipalities) {
-                                                                                newExpanded[key] = expandedMunicipalities[key];
-                                                                            }
-                                                                            newExpanded[mun.code] = !munExpanded;
-                                                                            setExpandedMunicipalities(newExpanded);
-                                                                        }
-                                                                    }
-                                                                },
-                                                                    h('polyline', { points: '9 18 15 12 9 6', fill: 'none', stroke: 'currentColor', strokeWidth: '2' })
-                                                                ),
-                                                                h('span', {
-                                                                    className: 'flex-1',
-                                                                    style: { cursor: munDistricts.length > 0 ? 'pointer' : 'default' },
-                                                                    onClick: munDistricts.length > 0 ? function() {
-                                                                        const newExpanded = {};
-                                                                        for (var key in expandedMunicipalities) {
-                                                                            newExpanded[key] = expandedMunicipalities[key];
-                                                                        }
-                                                                        newExpanded[mun.code] = !munExpanded;
-                                                                        setExpandedMunicipalities(newExpanded);
-                                                                    } : null
-                                                                }, mun.label + ' (' + mun.code + ')'),
-                                                                munDistricts.length > 0 && h('button', {
-                                                                    className: 'geo-select-btn',
-                                                                    onClick: function(e) {
-                                                                        e.stopPropagation();
-                                                                        const districtCodes = munDistricts.map(function(d) { return d.code; });
-                                                                        const updated = allDistsSelected
-                                                                            ? config.selectedCategories.filter(function(c) {
-                                                                                return !districtCodes.includes(c);
-                                                                            })
-                                                                            : config.selectedCategories.filter(function(c) {
-                                                                                return !districtCodes.includes(c);
-                                                                            }).concat(districtCodes);
-                                                                        updateDimensionConfig(dimension.code, { selectedCategories: updated });
-                                                                    }
-                                                                }, allDistsSelected ? 'Fjern alle bydeler' : 'Velg alle bydeler')
-                                                            ),
-                                                            munExpanded && munDistricts.length > 0 && h('div', { className: 'geo-district-list' },
-                                                                munDistricts.map(function(dist) {
-                                                                    return h('label', {
-                                                        key: dist.code,
-                                                        className: 'flex items-center gap-2 geo-district',
-                                                        role: 'treeitem',
-                                                        'aria-level': '3',
-                                                        'aria-posinset': munDistricts.indexOf(dist) + 1,
-                                                        'aria-setsize': munDistricts.length
-                                                    },
-                                                                        h('input', {
-                                                                            type: 'checkbox',
-                                                                            className: 'checkbox',
-                                                                            checked: config.selectedCategories.includes(dist.code),
-                                                                            onChange: function(e) {
-                                                                                const updated = e.target.checked
-                                                                                    ? config.selectedCategories.concat([dist.code])
-                                                                                    : config.selectedCategories.filter(function(c) { return c !== dist.code; });
-                                                                                updateDimensionConfig(dimension.code, { selectedCategories: updated });
-                                                                            }
-                                                                        }),
-                                                                        h('span', { className: 'text-sm' }, dist.label + ' (' + dist.code + ')')
-                                                                    );
-                                                                })
-                                                            )
-                                                        );
-                                                    })
-                                                )
-                                            );
-                                        })
-                                    );
-                                }
-
-                                // Fallback for non-GEO dimensions or when no hierarchy
-                                return dimension.category.index.filter(function(cat) {
-                                    if (dimension.code !== 'GEO' || geoSearch.trim() === '') return true;
-                                    const searchLower = geoSearch.toLowerCase();
-                                    const label = dimension.category.label[cat] || '';
-                                    return label.toLowerCase().includes(searchLower) || cat.toLowerCase().includes(searchLower);
-                                }).map(function(cat) {
-                                    return h('label', { key: cat, className: 'flex items-center gap-2' },
-                                        h('input', {
-                                            type: 'checkbox',
-                                            className: 'checkbox',
-                                            checked: config.selectedCategories.includes(cat),
-                                            onChange: function(e) {
-                                                const updated = e.target.checked
-                                                    ? config.selectedCategories.concat([cat])
-                                                    : config.selectedCategories.filter(function(c) { return c !== cat; });
-                                                updateDimensionConfig(dimension.code, { selectedCategories: updated });
-                                            }
-                                        }),
-                                        h('span', { className: 'text-sm' },
-                                            dimension.category.label[cat] + ' (' + cat + ')'
-                                        )
-                                    );
-                                });
-                            })()
-                        ),
-                        h('button', {
-                            className: 'btn btn-outline btn-sm',
-                            onClick: function() {
-                                const allCats = dimension.category.index;
-                                updateDimensionConfig(dimension.code, {
-                                    selectedCategories: config.selectedCategories.length === allCats.length ? [] : allCats
-                                });
-                            }
-                        }, config.selectedCategories.length === dimension.category.index.length ? 'Fjern alle' : 'Velg alle')
-                    ),
-                    config.filter === 'top' && h('div', null,
-                        h('label', { className: 'label' }, 'Antall'),
-                        h('input', {
-                            type: 'number',
-                            min: '1',
-                            className: 'input',
-                            value: config.topCount || '5',
-                            onChange: function(e) { updateDimensionConfig(dimension.code, { topCount: e.target.value }); }
-                        })
-                    ),
-                    config.filter === 'all' && h('div', null,
-                        h('label', { className: 'label' }, 'Wildcard-verdier (kommaseparert)'),
-                        h('input', {
-                            className: 'input',
-                            value: config.values.join(', '),
-                            onChange: function(e) {
-                                const values = e.target.value.split(',').map(function(v) { return v.trim(); }).filter(function(v) { return v; });
-                                updateDimensionConfig(dimension.code, { values: values.length > 0 ? values : ['*'] });
-                            },
-                            placeholder: '*, 03*, 30*'
-                        }),
-                        h('p', { className: 'text-xs text-gray-500 mt-1' },
-                            'Bruk * for å matche alle, eller f.eks. "03*" for å matche alle som starter med 03'
-                        )
-                    ),
-                    h('div', { className: 'flex items-center gap-2 text-sm text-gray-600' },
-                        h('span', { className: 'badge' },
-                            config.selectedCategories.length > 0
-                                ? config.selectedCategories.length + ' valgt'
-                                : config.filter === 'all'
-                                    ? 'Alle (' + dimension.category.index.length + ')'
-                                    : config.filter === 'top'
-                                        ? 'Topp ' + (config.topCount || 5)
-                                        : 'Ingen valgt'
-                        )
-                    )
+                        );
+                    })
                 )
             );
         }),
+        filteredCounties.length === 0 && others.length === 0 && h('li', { className: 'empty-text' }, 'Ingen treff.')
+    );
+}
+
+function renderValuePicker(ctx, dimension, config) {
+    const codes = categoryCodes(dimension);
+    const isGeo = dimension.code === 'GEO';
+    const geoGroups = isGeo ? ctx.getGeographyGroups(dimension) : null;
+    const searchValue = isGeo ? ctx.geoSearch : (ctx.valueSearch[dimension.code] || '');
+    const setSearch = isGeo
+        ? ctx.setGeoSearch
+        : function(v) { ctx.setValueSearch(function(prev) { return Object.assign({}, prev, { [dimension.code]: v }); }); };
+    const selected = config.selectedCategories;
+    const allSelected = selected.length === codes.length;
+    const q = searchValue.trim().toLowerCase();
+    const visible = codes.filter(function(c) {
+        return !q || labelOf(dimension, c).toLowerCase().includes(q) || c.toLowerCase().includes(q);
+    });
+
+    return h(React.Fragment, null,
+        selected.length > 0
+            ? h('div', { className: 'chip-row', 'aria-label': 'Valgte verdier' },
+                selected.slice(0, MAX_CHIPS).map(function(c) {
+                    return h(Chip, {
+                        key: c,
+                        variant: 'selected',
+                        removeLabel: 'Fjern ' + labelOf(dimension, c),
+                        onRemove: function() { toggleCode(ctx, dimension, config, c, false); }
+                    }, labelOf(dimension, c));
+                }),
+                selected.length > MAX_CHIPS && h('span', { className: 'chip-more' }, '+' + (selected.length - MAX_CHIPS) + ' til')
+            )
+            : h('p', { className: 'help-text help-warning' }, 'Ingen verdier valgt ennå. Velg minst én.'),
+        h('div', { className: 'picker-toolbar' },
+            h(SearchField, {
+                id: 'search-' + dimension.code,
+                size: 'sm',
+                label: 'Søk i ' + (dimension.label || dimension.code).toLowerCase(),
+                placeholder: isGeo ? 'Søk etter fylke, kommune eller bydel' : 'Søk i ' + codes.length + ' verdier eller kode',
+                value: searchValue,
+                onChange: setSearch
+            }),
+            h(Button, {
+                size: 'sm',
+                onClick: function() {
+                    ctx.updateDimensionConfig(dimension.code, { selectedCategories: allSelected ? [] : codes });
+                }
+            }, allSelected ? 'Fjern alle' : 'Velg alle')
         ),
-        h('div', { className: 'flex gap-2' },
-            h('button', {
-                className: 'btn btn-outline',
-                onClick: function() { setStep(2); }
-            }, 'Tilbake til tabeller'),
-            h('button', {
-                className: 'btn btn-primary flex-1',
-                onClick: buildFinalQuery
-            }, 'Generer spørring')
+        isGeo && geoGroups && geoGroups.hierarchy && geoGroups.counties.length > 0
+            ? h('div', { className: 'value-scroll geo-scroll' }, renderGeoTree(ctx, dimension, config, geoGroups))
+            : visible.length === 0
+                ? h('p', { className: 'empty-text' }, 'Ingen treff.')
+                : h('div', { className: 'value-scroll value-grid' },
+                    visible.map(function(c) {
+                        return checkboxOption(ctx, dimension, config, { code: c, label: labelOf(dimension, c) });
+                    })
+                )
+    );
+}
+
+function renderStepper(ctx, dimension, config, total) {
+    const id = 'top-' + dimension.code;
+    const raw = config.topCount || '5';
+    const n = parseInt(raw, 10) || 0;
+    const set = function(v) { ctx.updateDimensionConfig(dimension.code, { topCount: String(v) }); };
+    return h('div', { className: 'stepper-row' },
+        h('label', { htmlFor: id, className: 'stepper-label' }, 'Antall år'),
+        h('div', { className: 'stepper' },
+            h('button', { type: 'button', 'aria-label': 'Færre år', disabled: n <= 1, onClick: function() { set(Math.max(1, n - 1)); } }, '−'),
+            h('input', {
+                id: id,
+                type: 'text',
+                inputMode: 'numeric',
+                pattern: '[0-9]*',
+                value: raw,
+                onChange: function(e) { ctx.updateDimensionConfig(dimension.code, { topCount: e.target.value.replace(/\D/g, '') }); }
+            }),
+            h('button', { type: 'button', 'aria-label': 'Flere år', disabled: n >= total, onClick: function() { set(Math.min(total, n + 1)); } }, '+')
+        ),
+        h('span', { className: 'help-text stepper-help' }, 'av ' + total)
+    );
+}
+
+function renderWildcard(ctx, dimension, config, count, total) {
+    const id = 'wildcard-' + dimension.code;
+    const draft = ctx.wildcardDrafts[dimension.code];
+    return h('div', null,
+        h('label', { htmlFor: id, className: 'field-label' }, 'Mønster (kommaseparert)'),
+        h('input', {
+            id: id,
+            className: 'text-input mono',
+            value: draft !== undefined ? draft : config.values.join(', '),
+            placeholder: '*, 03*, 30*',
+            spellCheck: false,
+            onChange: function(e) {
+                const text = e.target.value;
+                ctx.setWildcardDrafts(function(prev) { return Object.assign({}, prev, { [dimension.code]: text }); });
+                const values = text.split(',').map(function(v) { return v.trim(); }).filter(function(v) { return v; });
+                ctx.updateDimensionConfig(dimension.code, { values: values.length > 0 ? values : ['*'] });
+            }
+        }),
+        h('p', { className: 'help-text' }, 'Bruk * for å matche alle, f.eks. 03*. Treffer ' + count + ' av ' + total + '.')
+    );
+}
+
+function renderDimensionCard(ctx, dimension) {
+    if (!dimension.category || !dimension.category.index) {
+        console.error('Dimension mangler category eller index:', dimension);
+        return h('section', { key: dimension.code, className: 'card dim-card' },
+            h(Alert, null, 'Dimensjon ' + (dimension.label || dimension.code) + ' har ikke riktig struktur')
+        );
+    }
+    const config = ctx.queryConfig[dimension.code] || { filter: 'all', values: ['*'], selectedCategories: [] };
+    const codes = categoryCodes(dimension);
+    const total = codes.length;
+    const count = selectedCount(dimension, config);
+    const mode = currentMode(ctx, dimension, config);
+    const wide = total > WIDE_THRESHOLD || mode === 'item';
+    const headingId = 'dim-' + dimension.code;
+
+    const options = [{ value: 'all', label: 'Alle' }, { value: 'item', label: 'Velg verdier' }];
+    if (isTimeDimension(dimension)) options.push({ value: 'top', label: 'Siste X år' });
+    if (total > WIDE_THRESHOLD || mode === 'wildcard') options.push({ value: 'wildcard', label: 'Wildcard' });
+
+    return h('section', {
+        key: dimension.code,
+        className: 'card dim-card' + (wide ? ' dim-wide' : '') + (mode === 'item' ? ' dim-active' : ''),
+        'aria-labelledby': headingId
+    },
+        h('div', { className: 'dim-head' },
+            h('h2', { id: headingId, className: 'dim-title' },
+                dimension.label || dimension.code,
+                h('code', { className: 'code-inline' }, dimension.code)
+            ),
+            h('span', {
+                className: 'dim-counter' + (count !== total ? ' is-filtered' : ''),
+                'aria-label': count + ' av ' + total + ' valgt'
+            }, count + ' / ' + total)
+        ),
+        total <= 1
+            ? h('p', { className: 'help-text dim-single' }, 'Bare én verdi, tas alltid med.')
+            : h(React.Fragment, null,
+                h(Segment, {
+                    label: 'Filtertype for ' + (dimension.label || dimension.code),
+                    className: 'dim-segment',
+                    value: mode,
+                    options: options,
+                    onChange: function(m) { setMode(ctx, dimension, m); }
+                }),
+                mode === 'all' && total <= 5 && h('div', { className: 'chip-row' },
+                    codes.map(function(c) { return h(Chip, { key: c }, labelOf(dimension, c)); })
+                ),
+                mode === 'top' && renderStepper(ctx, dimension, config, total),
+                mode === 'wildcard' && renderWildcard(ctx, dimension, config, count, total),
+                mode === 'item' && renderValuePicker(ctx, dimension, config)
+            )
+    );
+}
+
+// Svarformat, forventet antall rader og maks rader. Vises i sidekolonnen (og i innholdet på mobil).
+export function renderQuerySettings(ctx, prefix) {
+    const rows = ctx.rows;
+    const max = parseInt(ctx.maxRowCount, 10);
+    const overMax = !isNaN(max) && max > 0 && rows.total > max;
+    const advancedId = prefix + '-advanced';
+    return h('div', { className: 'query-settings' },
+        h('div', { className: 'settings-group' },
+            h('span', { className: 'settings-label', id: prefix + '-format-label' }, 'Svarformat'),
+            h(Segment, {
+                label: 'Svarformat',
+                value: ctx.responseFormat,
+                onChange: ctx.setResponseFormat,
+                options: [
+                    { value: 'json-stat2', label: 'JSON-stat2' },
+                    { value: 'csv2', label: 'CSV · navn' },
+                    { value: 'csv3', label: 'CSV · koder' }
+                ]
+            })
+        ),
+        h('div', { className: 'rows-box' + (overMax || rows.total === 0 ? ' is-warning' : '') },
+            h('span', { className: 'rows-label' }, 'Forventet antall rader'),
+            h('span', { className: 'rows-value' },
+                h('span', { className: 'rows-total' }, formatNumber(rows.total)),
+                rows.factors.length > 1 && h('span', { className: 'rows-formula' }, rows.factors.join(' × '))
+            )
+        ),
+        rows.total === 0 && ctx.dimensions.length > 0 && h('p', { className: 'help-text help-warning' },
+            'Minst én dimensjon har ingen valgte verdier.'),
+        overMax && h('p', { className: 'help-text help-warning' },
+            'Overstiger «Max antall rader» (' + formatNumber(max) + '). Svaret blir begrenset.'),
+        h('div', { className: 'advanced' },
+            h(Button, {
+                variant: 'link',
+                ariaExpanded: ctx.showAdvanced ? 'true' : 'false',
+                onClick: function() { ctx.setShowAdvanced(!ctx.showAdvanced); }
+            }, ctx.showAdvanced ? 'Skjul avansert' : 'Avansert'),
+            ctx.showAdvanced && h('div', { id: advancedId, className: 'advanced-body' },
+                h('label', { className: 'field-label', htmlFor: prefix + '-max-rows' }, 'Max antall rader'),
+                h('input', {
+                    id: prefix + '-max-rows',
+                    type: 'number',
+                    min: 1,
+                    className: 'text-input mono',
+                    value: ctx.maxRowCount,
+                    placeholder: 'Ubegrenset',
+                    onChange: function(e) { ctx.setMaxRowCount(e.target.value); }
+                })
+            )
         )
+    );
+}
+
+export function renderVariablesStep(ctx) {
+    const table = ctx.selectedTable;
+    const source = ctx.selectedSource;
+    const dims = Array.isArray(ctx.dimensions) ? ctx.dimensions : [];
+    return h(React.Fragment, null,
+        h(StepHeading, {
+            eyebrow: '03 · VARIABLER',
+            title: table ? ctx.getTableLabel(table) : 'Variabler',
+            subtitle: 'Alt er valgt som standard. Snevre inn bare det du trenger.',
+            actions: [
+                h(Button, {
+                    key: 'info', size: 'sm', icon: Icon.info(16),
+                    onClick: function() { ctx.fetchMetadata(source.id, table.tableId, { openModal: true }); }
+                }, 'Om tabellen'),
+                h(Button, { key: 'reset', size: 'sm', onClick: ctx.resetAllDimensions, disabled: ctx.filteredCount === 0 }, 'Nullstill alle')
+            ]
+        }),
+        ctx.firstSentence && h('p', { className: 'step-lead' }, ctx.firstSentence),
+        ctx.error && h(Alert, null, ctx.error),
+        ctx.loading
+            ? h(Status, null, 'Laster dimensjoner …')
+            : h('div', { className: 'dim-grid' }, dims.map(function(d) { return renderDimensionCard(ctx, d); })),
+        h('div', { className: 'mobile-only card' }, renderQuerySettings(ctx, 'm'))
+    );
+}
+
+export function renderVariablesActions(ctx) {
+    return h(React.Fragment, null,
+        h('div', { className: 'desktop-only' }, renderQuerySettings(ctx, 'd')),
+        h(Button, {
+            variant: 'primary', size: 'lg', block: true,
+            disabled: ctx.loading || ctx.dimensions.length === 0,
+            onClick: ctx.buildFinalQuery,
+            trailingIcon: Icon.arrowRight()
+        }, 'Generer spørring')
     );
 }
