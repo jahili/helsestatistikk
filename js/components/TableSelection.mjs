@@ -2,6 +2,7 @@ import { Badge, Segment, StepHeading, SearchField, Alert, Status, Icon, Button }
 import { formatDateShort, formatDateLong } from '../lib/format.mjs';
 
 const h = React.createElement;
+const NEW_GROUP = 'Nye tabeller';
 
 function filterTables(ctx) {
     const q = ctx.tableSearch.trim().toLowerCase();
@@ -28,6 +29,7 @@ function tableRow(ctx, table, indent) {
             onDoubleClick: function() { ctx.selectTable(table); }
         },
             h('span', { className: 'table-row-title' }, ctx.getTableLabel(table)),
+            ctx.isUnmapped(table) && h('span', { className: 'new-tag', title: 'Mangler i label-filen' }, 'Ny'),
             table.modifiedAt && h('span', { className: 'row-date' }, formatDateShort(table.modifiedAt)),
             h(Badge, { selected: selected }, table.tableId)
         )
@@ -37,13 +39,17 @@ function tableRow(ctx, table, indent) {
 function renderByTheme(ctx, tables) {
     const grouped = {};
     tables.forEach(function(table) {
-        const category = ctx.getTableCategory(table) || 'Andre';
+        // Tabeller som ikke finnes i label-filen ennå, samles øverst.
+        const category = ctx.isUnmapped(table) ? NEW_GROUP : (ctx.getTableCategory(table) || 'Andre');
         (grouped[category] = grouped[category] || []).push(table);
     });
     const searching = ctx.tableSearch.trim() !== '';
 
     return h('div', { className: 'list-card table-list' },
-        Object.keys(grouped).sort().map(function(category) {
+        Object.keys(grouped).sort(function(a, b) {
+            if (a === NEW_GROUP || b === NEW_GROUP) return a === NEW_GROUP ? -1 : 1;
+            return a.localeCompare(b, 'nb');
+        }).map(function(category) {
             // Under søk vises alle treff uansett om temaet er lukket.
             const expanded = searching || ctx.expandedCategories[category] !== false;
             const listId = 'tema-' + category.replace(/\W+/g, '-');
@@ -100,7 +106,10 @@ function renderDetail(ctx) {
             h('div', { className: 'detail-head' },
                 h('span', { className: 'detail-path' }, source.id + ' / Table / ' + table.tableId),
                 h('h2', { id: 'detail-title', className: 'detail-title' }, label),
-                summary && h('p', { className: 'detail-summary' }, summary)
+                summary && h('p', { className: 'detail-summary' }, summary),
+                ctx.isUnmapped(table) && h('p', { className: 'detail-note' },
+                    'Ny tabell hos FHI som ikke har fått navn og tema her ennå. Navnet er hentet fra FHIs beskrivelse',
+                    table.title ? ' (intern tittel: ' : '', table.title && h('code', { className: 'code-inline' }, table.title), table.title ? ').' : '.')
             ),
             h('div', { className: 'detail-dims' },
                 h('h3', { className: 'section-label' }, 'Dimensjoner'),

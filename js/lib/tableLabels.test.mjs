@@ -54,3 +54,17 @@ test('flattenCategories returnerer tomt resultat for ikke-array input', () => {
     assert.deepEqual(flattenCategories(undefined), { index: [], label: {} });
     assert.deepEqual(flattenCategories(null), { index: [], label: {} });
 });
+
+import { isTableMapped, fallbackTableLabel, hasReadableTitle } from './tableLabels.mjs';
+
+test('isTableMapped', () => {
+    assert.equal(isTableMapped({ '1': { label: 'x' } }, { tableId: 1 }), true);
+    assert.equal(isTableMapped({}, { tableId: 1 }), false);
+});
+
+test('fallbackTableLabel bruker lesbar tittel, ellers metadata, ellers intern tittel', () => {
+    assert.equal(fallbackTableLabel({ tableId: 1, title: 'Personskader totalt' }, {}), 'Personskader totalt');
+    assert.equal(fallbackTableLabel({ tableId: 932, title: 'INNVAND_INNVKAT' }, { 932: 'Antall innvandrere' }), 'Antall innvandrere');
+    assert.equal(fallbackTableLabel({ tableId: 932, title: 'INNVAND_INNVKAT' }, {}), 'INNVAND_INNVKAT');
+    assert.equal(hasReadableTitle({ title: 'INNVAND_INNVKAT' }), false);
+});

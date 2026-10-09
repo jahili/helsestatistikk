@@ -35,3 +35,20 @@ export function flattenCategories(categories) {
     traverse(categories);
     return result;
 }
+
+export function isTableMapped(tableLabels, table) {
+    return Boolean(tableLabels && tableLabels[table.tableId]);
+}
+
+// Navn for tabeller som mangler i label-filen. API-tittelen brukes når den er lesbar
+// tekst; er den bare et internt navn (f.eks. «INNVAND_INNVKAT»), brukes beskrivelsen
+// fra metadata (fallbackLabels[tableId]) når den er hentet.
+export function fallbackTableLabel(table, fallbackLabels) {
+    const title = String(table.title || table.name || '').trim();
+    if (/\s/.test(title)) return title;
+    return (fallbackLabels && fallbackLabels[table.tableId]) || title;
+}
+
+export function hasReadableTitle(table) {
+    return /\s/.test(String(table.title || table.name || '').trim());
+}

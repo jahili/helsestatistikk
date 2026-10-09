@@ -1139,3 +1139,22 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .code-block { box-shadow: 0 0 0 1px var(--line); }
 }
+
+/* Tabeller som mangler i label-filen */
+.new-tag {
+    flex-shrink: 0;
+    padding: 1px 7px;
+    border-radius: var(--r-pill);
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    font-size: 11px;
+    font-weight: 600;
+}
+.detail-note {
+    padding: 8px 10px;
+    border-radius: var(--r-tab);
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    font-size: 12px;
+}
+.detail-note .code-inline { color: inherit; margin: 0; }

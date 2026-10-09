@@ -1,5 +1,6 @@
 import { parseTableLabelsCSV } from './lib/csv.mjs';
-import { getTableLabel, getTableCategory, flattenCategories } from './lib/tableLabels.mjs';
+import { getTableLabel, getTableCategory, flattenCategories, isTableMapped, fallbackTableLabel, hasReadableTitle } from './lib/tableLabels.mjs';
+import { firstSentenceFromMetadata, labelFromMetadata } from './lib/metadata.mjs';
 import { getGeographyGroups } from './lib/geo.mjs';
 import { findMetricDimension, buildQuery } from './lib/query.mjs';
 import { generatePowerQueryCode } from './lib/powerquery.mjs';
@@ -66,6 +67,8 @@ function FHIQueryBuilder() {
     const [tableSort, setTableSort] = useState('theme');
     const [highlightedTable, setHighlightedTable] = useState(null);
     const [tablePreviewDims, setTablePreviewDims] = useState({});
+    const [fallbackLabels, setFallbackLabels] = useState({});
+    const requestedFallbacks = useRef({});
     const [valueSearch, setValueSearch] = useState({});
     const [wildcardDims, setWildcardDims] = useState({});
     const [wildcardDrafts, setWildcardDrafts] = useState({});
@@ -91,26 +94,7 @@ function FHIQueryBuilder() {
     }, [showMetadataModal]);
 
     useEffect(() => {
-        let sentence = '';
-        if (tableMetadata && tableMetadata.paragraphs && Array.isArray(tableMetadata.paragraphs)) {
-            for (let i = 0; i < tableMetadata.paragraphs.length; i++) {
-                if (tableMetadata.paragraphs[i].header !== 'Geografi') {
-                    let text = tableMetadata.paragraphs[i].content;
-                    if (typeof text === 'string') {
-                        const match = text.match(/^[^!?]*?\.(?=\s[A-Z]|$)|^[^!?]*?[!?]/);
-                        if (match) {
-                            sentence = match[0]
-                                .replace(/<\/(p|div|li|h[1-6]|br)\s*>/gi, ' ')
-                                .replace(/<[^>]*>/g, '')
-                                .replace(/\s+/g, ' ')
-                                .trim();
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        setFirstSentence(sentence);
+        setFirstSentence(firstSentenceFromMetadata(tableMetadata));
     }, [tableMetadata]);
 
     // Tema: lagret valg, ellers systemets innstilling.
@@ -388,6 +372,26 @@ function FHIQueryBuilder() {
         }
     }, [step, selectedSource, highlightedTable]);
 
+    // Tabeller som mangler i label-filen og bare har et internt navn i API-et
+    // (f.eks. «INNVAND_INNVKAT»), får navn fra første setning i metadata-beskrivelsen.
+    const labelsLoaded = Object.keys(tableLabels).length > 0;
+    useEffect(() => {
+        if (!labelsLoaded || !selectedSource) return;
+        const candidates = (step === 2 ? tables : []).concat([selectedTable, highlightedTable].filter(Boolean));
+        candidates.forEach(function(table) {
+            if (isTableMapped(tableLabels, table) || hasReadableTitle(table)) return;
+            if (requestedFallbacks.current[table.tableId]) return;
+            requestedFallbacks.current[table.tableId] = true;
+            fetch(API_BASE + '/' + selectedSource.id + '/Table/' + table.tableId + '/metadata')
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(meta) {
+                    const label = labelFromMetadata(meta);
+                    if (label) setFallbackLabels(function(prev) { return Object.assign({}, prev, { [table.tableId]: label }); });
+                })
+                .catch(function() { /* beholder API-tittelen */ });
+        });
+    }, [labelsLoaded, step, tables, selectedSource, selectedTable, highlightedTable]);
+
     // Tabellisten tilhører kilden den ble hentet for. Kom brukeren til steg 3 via
     // søket i steg 1, er listen ikke hentet ennå, så hent den når steg 2 åpnes.
     const tablesSourceId = useRef(null);
@@ -462,7 +466,10 @@ function FHIQueryBuilder() {
         closeMetadataModalImpl(setShowMetadataModal);
     }
 
-    const boundGetTableLabel = (table) => getTableLabel(tableLabels, table);
+    const boundGetTableLabel = (table) => isTableMapped(tableLabels, table)
+        ? getTableLabel(tableLabels, table)
+        : fallbackTableLabel(table, fallbackLabels);
+    const isUnmapped = (table) => labelsLoaded && !isTableMapped(tableLabels, table);
     const boundGetTableCategory = (table) => getTableCategory(tableLabels, table);
     const boundGeneratePowerQueryCode = () => generatePowerQueryCode(
         finalQuery, API_BASE, selectedSource && selectedSource.id, selectedTable && selectedTable.tableId
@@ -485,7 +492,7 @@ function FHIQueryBuilder() {
         setGlobalSearch, setTableSearch, setOutputFormat, setGeoSearch, setExpandedCounties, setExpandedMunicipalities,
         setExpandedCategories, setResponseFormat, setMaxRowCount, setPublisherFilter, setTableSort,
         setValueSearch, setWildcardDims, setWildcardDrafts, setShowAdvanced,
-        getTableLabel: boundGetTableLabel, getTableCategory: boundGetTableCategory,
+        getTableLabel: boundGetTableLabel, getTableCategory: boundGetTableCategory, isUnmapped,
         generatePowerQueryCode: boundGeneratePowerQueryCode, getGeographyGroups, findMetricDimension
     };
 

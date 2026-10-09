@@ -107,6 +107,14 @@ python -m http.server 8000
 
 Åpne deretter `http://localhost:8000`.
 
+### Tabell-labels
+
+`fhi_table_label_mapping.csv` gir tabellene lesbare navn og temaer. FHI gir ofte en tabell ny `tableId` når den får ny årgang, ny struktur eller nytt innhold, så filen må vedlikeholdes:
+
+- Workflowen «Sjekk tabell-labels mot FHI-API-et» kjører hver mandag og oppretter en issue med tabeller som mangler i filen eller ikke finnes lenger. Issuen lukkes automatisk når filen er i synk.
+- Sjekken kan også kjøres lokalt: `node scripts/check-labels.mjs`
+- Tabeller som mangler i filen vises i appen under «Nye tabeller», med navn fra FHIs metadata-beskrivelse når API-tittelen bare er et internt navn.
+
 ### Kjøre tester
 
 Ingen `npm install` nødvendig — testene bruker Node sin innebygde testrunner (krever Node 18+):
