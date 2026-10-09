@@ -1,4 +1,3 @@
-import { Icons, getSourceIcon } from './components/icons.mjs';
 import { parseTableLabelsCSV } from './lib/csv.mjs';
 import { getTableLabel, getTableCategory, flattenCategories } from './lib/tableLabels.mjs';
 import { getGeographyGroups } from './lib/geo.mjs';
@@ -8,11 +7,11 @@ import { expectedRows, isFiltered } from './lib/selection.mjs';
 import { formatNumber } from './lib/format.mjs';
 import { previewToCsv, csvFileName } from './lib/preview.mjs';
 import { Header, Sidebar, StepDots, Credits } from './components/Layout.mjs';
-import { Button, Icon } from './components/ui.mjs';
+import { Icon } from './components/ui.mjs';
 import { renderSourceStep, renderSourceActions } from './components/SourceSelection.mjs';
 import { renderTableStep, renderTableActions } from './components/TableSelection.mjs';
 import { renderVariablesStep, renderVariablesActions } from './components/DimensionConfiguration.mjs';
-import { renderQueryResult } from './components/QueryResult.mjs';
+import { renderQueryStep, renderQueryActions } from './components/QueryResult.mjs';
 import { renderMetadataModal, closeMetadataModal as closeMetadataModalImpl } from './components/MetadataModal.mjs';
 
 const { useState, useEffect, useRef, createElement: h } = React;
@@ -537,14 +536,8 @@ function FHIQueryBuilder() {
         main = renderVariablesStep(ctx);
         actions = renderVariablesActions(ctx);
     } else if (step === 4) {
-        main = renderQueryResult(
-            finalQuery, selectedSource, selectedTable, dimensions,
-            previewData, outputFormat, loading, error, firstSentence, geoMappingUrl,
-            fetchPreview, copyToClipboard, boundGeneratePowerQueryCode, findMetricDimension, boundGetTableLabel,
-            setOutputFormat, setStep,
-            setSelectedSource, setSelectedTable, setDimensions, setQueryConfig, setFinalQuery, setPreviewData,
-            API_BASE, Icons
-        );
+        main = renderQueryStep(ctx);
+        actions = renderQueryActions(ctx);
     }
 
     return h('div', { className: 'app' },
