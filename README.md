@@ -6,7 +6,7 @@
 
 En interaktiv web-applikasjon som gjør det enkelt å bygge og kjøre spørringer mot FHIs åpne statistikk-API.
 
-[Publisert versjon](https://janhli.github.io/FHI-API-Query-Builder/)
+[Publisert versjon]([https://janhli.github.io/FHI-API-Query-Builder/](https://jahili.github.io/helsestatistikk/))
 
 ## Hva er det?
 
