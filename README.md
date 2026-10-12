@@ -172,7 +172,7 @@ For år-dimensjonen (AAR) kan du velge:
 
 - `filter: "item"` - Spesifikke år
 - `filter: "all"` - Alle år (wildcard)
-- `filter: "top"` - Siste X år
+- `filter: "bottom"` - Siste X år (API-et sorterer årene stigende, så `"top"` gir de første årene)
 
 ### Maksimale antall rader
 

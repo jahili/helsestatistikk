@@ -13,9 +13,12 @@ test('filter "item" bruker selectedCategories som values', () => {
     assert.deepEqual(query.response, { format: 'json-stat2' });
 });
 
-test('filter "top" faller tilbake til topCount = "5"', () => {
+test('«Siste X år» (filter "top" i appen) sendes som "bottom" og faller tilbake til 5', () => {
+    // FHI-API-et sorterer årene stigende: "top" gir de første årene, "bottom" de siste.
     const query = buildQuery([{ code: 'AAR' }], { AAR: { filter: 'top' } }, 'json-stat2', '');
-    assert.deepEqual(query.dimensions[0], { code: 'AAR', filter: 'top', values: ['5'] });
+    assert.deepEqual(query.dimensions[0], { code: 'AAR', filter: 'bottom', values: ['5'] });
+    const tre = buildQuery([{ code: 'AAR' }], { AAR: { filter: 'top', topCount: '3' } }, 'json-stat2', '');
+    assert.deepEqual(tre.dimensions[0], { code: 'AAR', filter: 'bottom', values: ['3'] });
 });
 
 test('filter "all" uten values gir wildcard', () => {
