@@ -66,7 +66,43 @@ function toggleKey(setter, key) {
     setter(function(prev) { return Object.assign({}, prev, { [key]: !prev[key] }); });
 }
 
-// Geografi: fylke › kommune › bydel. Utvalgslogikken er den samme som før redesignet.
+// Levekårssonene i én kommune som egen gruppe under bydelene. Gruppens avkrysningsboks velger eller
+// fjerner alle sonene (den vises også på mobil, der «Velg alle»-lenkene er skjult).
+function renderZoneGroup(ctx, dimension, config, mun, zones) {
+    const key = mun.code + ':lks';
+    const expanded = Boolean(ctx.expandedMunicipalities[key]);
+    const codes = zones.map(function(z) { return z.code; });
+    const selectedCount = codes.filter(function(c) { return config.selectedCategories.includes(c); }).length;
+    const all = selectedCount === codes.length;
+    const toggleAll = function() {
+        const rest = config.selectedCategories.filter(function(c) { return !codes.includes(c); });
+        ctx.updateDimensionConfig(dimension.code, { selectedCategories: all ? rest : rest.concat(codes) });
+    };
+    return h('li', { key: key, className: 'geo-node' },
+        h('div', { className: 'geo-row' },
+            expandButton(expanded, 'levekårssoner i ' + mun.label, function() { toggleKey(ctx.setExpandedMunicipalities, key); }),
+            h('label', { className: 'value-option value-option-strong' },
+                h('input', {
+                    type: 'checkbox',
+                    checked: all,
+                    ref: function(el) { if (el) el.indeterminate = selectedCount > 0 && !all; },
+                    onChange: toggleAll
+                }),
+                h('span', { className: 'value-option-label' }, 'Levekårssoner i ' + mun.label),
+                h('code', { className: 'code-inline' }, selectedCount > 0 ? selectedCount + '/' + codes.length : String(codes.length))
+            )
+        ),
+        expanded && h('ul', { className: 'geo-children' },
+            zones.map(function(zone) {
+                return h('li', { key: zone.code, className: 'geo-node' },
+                    h('div', { className: 'geo-row' }, h('span', { className: 'tree-spacer' }), checkboxOption(ctx, dimension, config, zone))
+                );
+            })
+        )
+    );
+}
+
+// Geografi: fylke › kommune › bydel og levekårssoner. Utvalgslogikken er den samme som før redesignet.
 function renderGeoTree(ctx, dimension, config, geoGroups) {
     const hierarchy = geoGroups.hierarchy;
     const q = ctx.geoSearch.trim().toLowerCase();
@@ -91,6 +127,7 @@ function renderGeoTree(ctx, dimension, config, geoGroups) {
         filteredCounties.map(function(county) {
             const muns = hierarchy[county.code] ? hierarchy[county.code].municipalities : [];
             const countyDistricts = hierarchy[county.code] ? hierarchy[county.code].districts : {};
+            const countyZones = hierarchy[county.code] ? hierarchy[county.code].zones : {};
             // Under søk vises fylket åpent, med bare treffene (eller alle kommuner hvis fylket selv traff).
             const expanded = q ? true : Boolean(ctx.expandedCounties[county.code]);
             const visibleMuns = q && !matches(county) ? muns.filter(matches) : muns;
@@ -117,12 +154,14 @@ function renderGeoTree(ctx, dimension, config, geoGroups) {
                 expanded && visibleMuns.length > 0 && h('ul', { className: 'geo-children' },
                     visibleMuns.map(function(mun) {
                         const dists = countyDistricts[mun.code] || [];
+                        const zones = countyZones[mun.code] || [];
                         const munExpanded = Boolean(ctx.expandedMunicipalities[mun.code]);
                         const allDists = dists.length > 0 && dists.every(function(d) { return config.selectedCategories.includes(d.code); });
+                        const childWords = [dists.length > 0 && 'bydeler', zones.length > 0 && 'levekårssoner'].filter(Boolean).join(' og ');
                         return h('li', { key: mun.code, className: 'geo-node' },
                             h('div', { className: 'geo-row' },
-                                dists.length > 0
-                                    ? expandButton(munExpanded, 'bydeler i ' + mun.label, function() { toggleKey(ctx.setExpandedMunicipalities, mun.code); })
+                                childWords
+                                    ? expandButton(munExpanded, childWords + ' i ' + mun.label, function() { toggleKey(ctx.setExpandedMunicipalities, mun.code); })
                                     : h('span', { className: 'tree-spacer' }),
                                 checkboxOption(ctx, dimension, config, mun),
                                 dists.length > 0 && h(Button, {
@@ -135,12 +174,13 @@ function renderGeoTree(ctx, dimension, config, geoGroups) {
                                     }
                                 }, allDists ? 'Fjern alle bydeler' : 'Velg alle bydeler')
                             ),
-                            munExpanded && dists.length > 0 && h('ul', { className: 'geo-children' },
+                            munExpanded && childWords && h('ul', { className: 'geo-children' },
                                 dists.map(function(dist) {
                                     return h('li', { key: dist.code, className: 'geo-node' },
                                         h('div', { className: 'geo-row' }, h('span', { className: 'tree-spacer' }), checkboxOption(ctx, dimension, config, dist))
                                     );
-                                })
+                                }),
+                                zones.length > 0 && renderZoneGroup(ctx, dimension, config, mun, zones)
                             )
                         );
                     })

@@ -34,14 +34,14 @@ FHI API Query Builder er et visuelt verktøy som lar deg utforske og hente data 
    - Appen henter dataene med en gang, med et standardutvalg: de siste ti årene, hele landet og fylkene, og totalverdier for store dimensjoner
 
 4. **Se dataene** - I steg 4 velger du visning:
-   - **Figur**: linjediagram når tiden varierer, ellers liggende søyler. Dimensjoner som ikke får plass, låses til én verdi i nedtrekksmenyer, eller deles opp i små separate diagrammer med felles akse. Søylediagram langs geografi kan vise fylker, kommuner eller bydeler. Figuren lastes ned som PNG eller SVG
+   - **Figur**: linjediagram når tiden varierer, ellers liggende søyler. Dimensjoner som ikke får plass, låses til én verdi i nedtrekksmenyer, eller deles opp i små separate diagrammer med felles akse. Søylediagram langs geografi kan vise fylker, kommuner, bydeler eller levekårssoner. Figuren lastes ned som PNG eller SVG
    - **Tabell**: pivottabell med valgfri dimensjon i kolonnene (lastes ned som CSV), eller liste med de første radene
    - **API og Power BI**: JSON-spørringen, Power Query (M) og cURL, svarformat og endepunkter
    - «Last ned som CSV» gir alle dataene i utvalget, og «Kopier lenke til visningen» gir en lenke som åpner samme tabell, utvalg og visning
 
 5. **Endre utvalg** - I steg 3 velger du hvilke verdier dataene skal vise, og trykker «Vis data»
    - **Filtertype**: Velg spesifikke verdier, alle verdier, mønster (wildcard), eller for tidsvariabler et antall år
-   - **Geografi**: Velg fylker, kommuner eller bydeler i et tre med søk
+   - **Geografi**: Velg fylker, kommuner, bydeler eller levekårssoner i et tre med søk
    - Klikk på «Om tabellen» for detaljer om hva tabellen inneholder
 
 ### Lenker
@@ -66,7 +66,7 @@ Denne appen bygger på [FHI Statistikk sin åpne API](https://statistikk-data.fh
 - **API-dokumentasjon**: [https://github.com/folkehelseinstituttet/Fhi.Statistikk.OpenAPI](https://github.com/folkehelseinstituttet/Fhi.Statistikk.OpenAPI)
 - **Datatyper**: Statistikken inneholder data om blant annet nasjonale prøver, helsedata, skoledata og mer
 - **Oppdateringsfrekvens**: Varierer etter datakilde, typisk årlig eller oftere
-- **Dekningsområde**: Hele Norge, med detaljer på fylke, kommune og bydel-nivå
+- **Dekningsområde**: Hele Norge, med detaljer på fylke-, kommune-, bydel- og levekårssonenivå
 
 ### API-endepunkter som brukes
 
@@ -156,9 +156,17 @@ For geografiske data (GEO-dimensjon) håndteres følgende nivåer:
 
 - **2 sifre** - Fylker
 - **4 sifre** - Kommuner
-- **6 sifre** - Bydeler (Oslo)
+- **6 sifre** - Bydeler (Oslo, Bergen, Stavanger, Trondheim)
+- **10 sifre** - Levekårssoner (LKS): SSBs inndeling av kommuner i soner av hele grunnkretser
+  ([klassifikasjon 745](https://www.ssb.no/klass/klassifikasjoner/745)), f.eks. `3101000001` «Halden LKS 01».
+  SSB deler inn kommunene puljevis, så foreløpig har 66 kommuner levekårssoner, og bare noen
+  FHI-tabeller har dem. Sonene vises under kommunen sin, også i Bergen der FHI legger dem under bydelen
 
-Appen lar deg enkelt velge "alle kommuner i fylke X" eller "alle bydeler i Oslo".
+Appen lar deg enkelt velge "alle kommuner i fylke X", "alle bydeler i Oslo" eller "alle levekårssoner i Halden".
+`geo_mapping.csv` har koder og navn for alle nivåene, også levekårssonene.
+
+Kartgrenser for alle nivåene, også levekårssoner, finnes i
+[norge-administrative-grenser](https://github.com/jahili/norge-administrative-grenser) med de samme kodene.
 
 ### Tidsserier
 

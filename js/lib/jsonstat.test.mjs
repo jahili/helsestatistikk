@@ -110,12 +110,19 @@ test('chartPoints bruker enheten til valgt måltall', () => {
 });
 
 test('geoLevel og geoLevelsIn kjenner igjen FHI sine geokoder', () => {
-    assert.deepEqual(['0', '03', '0301', '030101', 'x'].map(geoLevel), ['land', 'fylke', 'kommune', 'bydel', null]);
+    assert.deepEqual(['0', '03', '0301', '030101', '3101000001', 'x'].map(geoLevel), ['land', 'fylke', 'kommune', 'bydel', 'lks', null]);
     const dim = { role: 'geo', categories: ['0', '03', '32', '0301', '3201'].map(code => ({ code, label: code })) };
     assert.deepEqual(geoLevelsIn(dim).map(l => [l.id, l.count]), [['land', 1], ['fylke', 2], ['kommune', 2]]);
     assert.equal(defaultGeoLevel(geoLevelsIn(dim)), 'fylke');
     assert.deepEqual(geoLevelsIn({ role: 'geo', categories: [{ code: '03' }, { code: '32' }] }), []);
     assert.deepEqual(geoLevelsIn({ role: null, categories: [{ code: '0' }, { code: '03' }] }), []);
+});
+
+test('geoLevelsIn tar med levekårssoner (10 sifre) som eget nivå etter bydeler', () => {
+    const dim = { role: 'geo', categories: ['0', '31', '3101', '3101000001', '3101000002'].map(code => ({ code, label: code })) };
+    assert.deepEqual(geoLevelsIn(dim).map(l => [l.id, l.label, l.count]), [
+        ['land', 'Land', 1], ['fylke', 'Fylker', 1], ['kommune', 'Kommuner', 1], ['lks', 'Levekårssoner', 2]
+    ]);
 });
 
 test('chartPoints viser valgt geonivå pluss hele landet, og begrenser antall søyler', () => {

@@ -121,16 +121,19 @@ export const GEO_LEVELS = [
     { id: 'land', label: 'Land' },
     { id: 'fylke', label: 'Fylker' },
     { id: 'kommune', label: 'Kommuner' },
-    { id: 'bydel', label: 'Bydeler' }
+    { id: 'bydel', label: 'Bydeler' },
+    { id: 'lks', label: 'Levekårssoner' }
 ];
 
-// FHI sine geokoder: 0 = hele landet, 2 sifre = fylke, 4 = kommune, 6 = bydel.
+// FHI sine geokoder: 0 = hele landet, 2 sifre = fylke, 4 = kommune, 6 = bydel,
+// 10 = levekårssone (SSBs LKS, kommunenummer + 6 sifre).
 export function geoLevel(code) {
     const c = String(code);
     if (c === '0') return 'land';
     if (/^\d{2}$/.test(c)) return 'fylke';
     if (/^\d{4}$/.test(c)) return 'kommune';
     if (/^\d{6}$/.test(c)) return 'bydel';
+    if (/^\d{10}$/.test(c)) return 'lks';
     return null;
 }
 
