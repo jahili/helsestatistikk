@@ -1,5 +1,5 @@
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/janhli/FHI-API-Query-Builder?style=for-the-badge&color=007db9)
-![License](https://img.shields.io/github/license/janhli/FHI-API-Query-Builder?style=for-the-badge&color=007db9)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/jahili/helsestatistikk?style=for-the-badge&color=007db9)
+![License](https://img.shields.io/github/license/jahili/helsestatistikk?style=for-the-badge&color=007db9)
 
 
 # FHI API Query Builder
@@ -185,7 +185,8 @@ Hvis noe går galt:
 
 
 ## Lisens
-Denne programvaren er utviklet av Jan Hiroshi Lintvedt / Akershus fylkeskommune og deles som åpen kildekode
+Verktøyet ble opprinnelig utviklet i Akershus analyse, Akershus fylkeskommune, og er videreført som privat prosjekt.
+Det deles som åpen kildekode
 under [MIT-lisensen](./LICENSE). Dette innebærer at alle står fritt til å bruke, kopiere, endre og
 distribuere programvaren, så lenge opphavsretten og lisensvilkårene beholdes.
 
@@ -193,4 +194,4 @@ Dataene fra FHI er tilgjengelig under [Norsk lisensfor offentlige data](https://
 
 ## Versjon
 
-Gjeldende versjon vises i badgen øverst i denne filen og på [GitHub Releases](https://github.com/janhli/FHI-API-Query-Builder/releases). Appen er under aktiv utvikling - tilbakemeldinger og forbedringer er velkommen!
+Gjeldende versjon vises i badgen øverst i denne filen og på [GitHub Releases](https://github.com/jahili/helsestatistikk/releases). Appen er under aktiv utvikling - tilbakemeldinger og forbedringer er velkommen!

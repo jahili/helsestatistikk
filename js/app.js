@@ -58,7 +58,7 @@ function FHIQueryBuilder() {
     const [expandedMunicipalities, setExpandedMunicipalities] = useState({});
     const [tableLabels, setTableLabels] = useState({});
     const [expandedCategories, setExpandedCategories] = useState({});
-    const [geoMappingUrl] = useState('https://raw.githubusercontent.com/janhli/FHI-API-Query-Builder/main/geo_mapping.csv');
+    const [geoMappingUrl] = useState('https://raw.githubusercontent.com/jahili/helsestatistikk/main/geo_mapping.csv');
 
     // Rene visningsvalg for det nye grensesnittet. Påvirker ikke spørringen.
     const [theme, setTheme] = useState(readStoredTheme);

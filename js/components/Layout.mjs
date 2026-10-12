@@ -41,9 +41,8 @@ export function Header(props) {
 export function Credits(props) {
     const text = h('p', { className: 'credits' + (props.className && !props.showLinks ? ' ' + props.className : '') },
         'Data fra ', externalLink('https://statistikk-data.fhi.no', 'FHI Statistikk'),
-        ' · Utarbeidet av ', externalLink('https://akershusanalyse.no/', 'Akershus analyse'),
-        ', ', externalLink('https://afk.no/', 'Akershus fylkeskommune'),
-        ' · ', h('a', { href: 'mailto:janli@afk.no' }, 'janli@afk.no')
+        ' · Laget av Jan Hiroshi Lintvedt',
+        ' · ', h('a', { href: 'mailto:jhl@plotikon.com' }, 'jhl@plotikon.com')
     );
     if (!props.showLinks) return text;
     // På smale skjermer er header-lenkene skjult, så de vises her i stedet.
