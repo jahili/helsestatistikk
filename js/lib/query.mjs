@@ -44,9 +44,11 @@ export function buildQuery(dimensions, queryConfig, responseFormat, maxRowCount)
                     values: config.selectedCategories
                 };
             } else if (config.filter === 'top') {
+                // «Siste X år». FHI-API-et sorterer årene stigende, så "top" gir de første
+                // årene og "bottom" de siste. Appen kaller valget "top" (også i delte lenker).
                 return {
                     code: dim.code,
-                    filter: 'top',
+                    filter: 'bottom',
                     values: [config.topCount || '5']
                 };
             } else {
