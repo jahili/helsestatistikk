@@ -217,3 +217,29 @@ export function chartPoints(data, plan, filterValues, options) {
         truncated: truncated
     };
 }
+
+const MAX_FACETS = 12;
+
+// Låste dimensjoner som kan deles opp i små figurer (ikke måltall, høyst tolv verdier).
+export function facetCandidates(plan) {
+    if (!plan || plan.type === 'none') return [];
+    return plan.filters.filter(function(d) {
+        return d.role !== 'metric' && d.categories.length > 1 && d.categories.length <= MAX_FACETS;
+    });
+}
+
+// Felles verdiområde for flere figurer, så de kan sammenlignes. Tar med 0 for søyler.
+export function sharedExtent(results, includeZero) {
+    let min = Infinity;
+    let max = -Infinity;
+    results.forEach(function(r) {
+        r.points.forEach(function(p) {
+            if (p.value == null) return;
+            if (p.value < min) min = p.value;
+            if (p.value > max) max = p.value;
+        });
+    });
+    if (min === Infinity) return null;
+    if (includeZero) { min = Math.min(0, min); max = Math.max(0, max); }
+    return [min, max];
+}

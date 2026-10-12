@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { jsonStatToRows, chartPlan, chartPoints, geoLevel, geoLevelsIn, defaultGeoLevel } from './jsonstat.mjs';
+import { jsonStatToRows, chartPlan, chartPoints, geoLevel, geoLevelsIn, defaultGeoLevel, facetCandidates, sharedExtent } from './jsonstat.mjs';
 
 // Utdrag av ekte svar fra daar/277 (prikkede verdier som ":") og nokkel/366 (to måltall).
 const ulykker = {
@@ -138,4 +138,19 @@ test('chartPoints viser valgt geonivå pluss hele landet, og begrenser antall s�
 test('defaultGeoLevel velger aldri hele landet når det finnes lavere nivåer', () => {
     assert.equal(defaultGeoLevel([{ id: 'land', count: 1 }, { id: 'kommune', count: 1 }]), 'kommune');
     assert.equal(defaultGeoLevel([]), null);
+});
+
+test('facetCandidates gir låste dimensjoner som ikke er måltall', () => {
+    const data = jsonStatToRows(ulikhet);
+    assert.deepEqual(facetCandidates(chartPlan(data)), []);
+    const plan = chartPlan(jsonStatToRows(ulykker));
+    assert.deepEqual(facetCandidates(plan).map(d => d.id), ['ULYKKER']);
+    assert.deepEqual(facetCandidates({ type: 'none', filters: [] }), []);
+});
+
+test('sharedExtent finner felles min og maks, med null for søyler', () => {
+    const r = [{ points: [{ value: 3 }, { value: null }] }, { points: [{ value: 7 }] }];
+    assert.deepEqual(sharedExtent(r, false), [3, 7]);
+    assert.deepEqual(sharedExtent(r, true), [0, 7]);
+    assert.equal(sharedExtent([{ points: [] }], false), null);
 });

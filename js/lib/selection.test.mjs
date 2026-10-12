@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isTimeDimension, matchesWildcard, selectedCount, isFiltered, expectedRows } from './selection.mjs';
+import { isTimeDimension, matchesWildcard, selectedCount, isFiltered, expectedRows, selectionSummary } from './selection.mjs';
 
 const year = { code: 'AAR', label: 'År', category: { index: ['2020', '2021', '2022', '2023'] } };
 const geo = { code: 'GEO', label: 'Geografi', category: { index: ['0', '03', '0301', '030101', '32', '3201'] } };
@@ -43,4 +43,12 @@ test('expectedRows multipliserer valgte verdier', () => {
     });
     assert.deepEqual(result, { total: 6, factors: [2, 3] });
     assert.deepEqual(expectedRows([], {}), { total: 0, factors: [] });
+});
+
+test('selectionSummary gir korte tekster om utvalget', () => {
+    const dim = { code: 'GEO', category: { index: ['0', '03', '32', '33'], label: { '0': 'Hele landet', '03': 'Oslo', '32': 'Akershus', '33': 'Buskerud' } } };
+    assert.equal(selectionSummary(dim, { filter: 'all', values: ['*'] }), 'Alle (4)');
+    assert.equal(selectionSummary(dim, { filter: 'item', selectedCategories: ['03', '32'] }), 'Oslo, Akershus');
+    assert.equal(selectionSummary(dim, { filter: 'item', selectedCategories: ['0', '03', '32'] }, 2), '3 av 4');
+    assert.equal(selectionSummary({ code: 'K', category: { index: ['T'], label: { T: 'Begge kjønn' } } }, null), 'Begge kjønn');
 });

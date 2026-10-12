@@ -46,3 +46,17 @@ export function expectedRows(dimensions, queryConfig) {
     const total = factors.reduce(function(acc, n) { return acc * n; }, factors.length ? 1 : 0);
     return { total: total, factors: factors };
 }
+
+// Kort tekst om utvalget i én dimensjon, f.eks. «Alle (16)», «Oslo, Akershus» eller «12 av 409».
+export function selectionSummary(dimension, config, maxNames) {
+    const max = maxNames || 3;
+    const codes = categoryCodes(dimension);
+    const total = codes.length;
+    const count = selectedCount(dimension, config);
+    const labelOf = function(code) {
+        return (dimension.category && dimension.category.label && dimension.category.label[code]) || code;
+    };
+    if (count === total) return total === 1 ? labelOf(codes[0]) : 'Alle (' + total + ')';
+    if (config && config.filter === 'item' && count <= max) return config.selectedCategories.map(labelOf).join(', ');
+    return count + ' av ' + total;
+}
