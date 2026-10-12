@@ -1,8 +1,9 @@
 import { tokenizeJson, tokenizeStrings } from '../lib/jsonHighlight.mjs';
 import { generateCurlCommand } from '../lib/curl.mjs';
-import { previewToTable } from '../lib/preview.mjs';
+import { previewToTable, csvFileName } from '../lib/preview.mjs';
 import { shortenApiUrl, formatNumber } from '../lib/format.mjs';
-import { Button, StepHeading, Alert, Icon } from './ui.mjs';
+import { Button, StepHeading, Alert, Icon, Segment } from './ui.mjs';
+import { ChartView } from './Chart.mjs';
 
 const h = React.createElement;
 const PREVIEW_ROWS = 100;
@@ -142,11 +143,14 @@ function renderPreview(ctx) {
     }
 
     const table = previewToTable(ctx.previewData, ctx.findMetricDimension, PREVIEW_ROWS);
+    const showChart = ctx.previewView === 'chart';
     return h('section', { className: 'card preview-card', 'aria-labelledby': 'preview-heading' },
         h('div', { className: 'preview-head' },
             h('div', null,
                 h('h2', { id: 'preview-heading', className: 'preview-title' }, 'Forhåndsvisning'),
-                h('p', { className: 'side-text' },
+                showChart && Array.isArray(ctx.previewData.value) && h('p', { className: 'side-text' },
+                    'Figuren bygger på alle ' + formatNumber(ctx.previewData.value.length) + ' verdiene i utvalget.'),
+                !showChart && h('p', { className: 'side-text' },
                     table
                         ? (table.totalRows > table.rows.length
                             ? 'Viser de første ' + table.rows.length + ' av ' + formatNumber(table.totalRows) + ' rader.'
@@ -155,9 +159,25 @@ function renderPreview(ctx) {
                     table && table.metric ? ' Måltall (' + table.metric.id + ') er pivotert til ' + table.metric.count + ' kolonner.' : ''
                 )
             ),
-            h(Button, { size: 'sm', onClick: ctx.fetchPreview, disabled: ctx.loading }, ctx.loading ? 'Henter …' : 'Hent på nytt')
+            h('div', { className: 'preview-tools' },
+                h(Segment, {
+                    label: 'Visning',
+                    options: [{ value: 'table', label: 'Tabell' }, { value: 'chart', label: 'Figur' }],
+                    value: showChart ? 'chart' : 'table',
+                    onChange: ctx.setPreviewView
+                }),
+                h(Button, { size: 'sm', onClick: ctx.fetchPreview, disabled: ctx.loading }, ctx.loading ? 'Henter …' : 'Hent på nytt')
+            )
         ),
-        table
+        showChart
+            ? h(ChartView, {
+                previewData: ctx.previewData,
+                theme: ctx.effectiveTheme,
+                title: ctx.getTableLabel(ctx.selectedTable),
+                fileBase: csvFileName(ctx.selectedSource.id, ctx.selectedTable.tableId).replace(/\.csv$/, ''),
+                sourceLabel: 'Kilde: FHI Statistikk, ' + (ctx.selectedSource.title || ctx.selectedSource.name) + ', tabell ' + ctx.selectedTable.tableId
+            })
+        : table
             ? h('div', { className: 'preview-scroll', tabIndex: 0, role: 'region', 'aria-label': 'Forhåndsvisning, kan rulles' },
                 h('table', { className: 'preview-table' },
                     h('thead', null,

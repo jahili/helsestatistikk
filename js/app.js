@@ -74,6 +74,7 @@ function FHIQueryBuilder() {
     const [wildcardDrafts, setWildcardDrafts] = useState({});
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [pendingCsv, setPendingCsv] = useState(false);
+    const [previewView, setPreviewView] = useState('table');
     const globalSearchRef = useRef(null);
     const mainRef = useRef(null);
     const copyTimer = useRef(null);
@@ -485,13 +486,13 @@ function FHIQueryBuilder() {
         dimensions, queryConfig, finalQuery, previewData, responseFormat, maxRowCount,
         globalSearch, tableSearch, outputFormat, geoSearch, expandedCounties, expandedMunicipalities,
         expandedCategories, firstSentence, geoMappingUrl, copiedKey, publisherFilter, tableSort,
-        tablePreviewDims, valueSearch, wildcardDims, wildcardDrafts, showAdvanced, pendingCsv, rows, filteredCount,
+        tablePreviewDims, valueSearch, wildcardDims, wildcardDrafts, showAdvanced, pendingCsv, rows, filteredCount, previewView, effectiveTheme,
         globalSearchRef,
         selectSource, selectSourceAndTable, selectTable, highlightTable, updateDimensionConfig, resetAllDimensions,
         buildFinalQuery, fetchPreview, fetchMetadata, copyToClipboard, downloadCsv, startOver,
         setGlobalSearch, setTableSearch, setOutputFormat, setGeoSearch, setExpandedCounties, setExpandedMunicipalities,
         setExpandedCategories, setResponseFormat, setMaxRowCount, setPublisherFilter, setTableSort,
-        setValueSearch, setWildcardDims, setWildcardDrafts, setShowAdvanced,
+        setValueSearch, setWildcardDims, setWildcardDrafts, setShowAdvanced, setPreviewView,
         getTableLabel: boundGetTableLabel, getTableCategory: boundGetTableCategory, isUnmapped,
         generatePowerQueryCode: boundGeneratePowerQueryCode, getGeographyGroups, findMetricDimension
     };

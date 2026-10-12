@@ -953,6 +953,27 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
 .preview-table td.num, .preview-table th.num { text-align: right; }
 .preview-table td.num, .preview-table td.mono { font-family: var(--font-mono); font-size: 12px; }
 .preview-table tbody tr:hover { background: var(--surface-2); }
+.preview-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- Figur ---------- */
+.chart-view { display: flex; flex-direction: column; gap: 12px; }
+.chart-filters { display: flex; flex-wrap: wrap; gap: 12px; }
+.chart-filter { flex: 1 1 200px; max-width: 320px; }
+.chart-select { height: 38px; font-size: 13px; }
+.chart-filter-level { max-width: 420px; }
+.chart-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--text-muted); }
+.chart-legend li { display: flex; align-items: center; gap: 6px; }
+.chart-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.chart-canvas {
+    --plot-background: var(--surface);
+    width: 100%;
+    min-height: 120px;
+    color: var(--text-muted);
+}
+.chart-canvas svg { display: block; max-width: 100%; height: auto; }
+.chart-canvas text { font-variant-numeric: normal; }
+.chart-note { padding: 12px 14px; border: 1px dashed var(--line-input); border-radius: var(--r-input); }
+.chart-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .side-actions { display: flex; flex-direction: column; gap: 10px; }
 .start-over { align-self: center; padding: 6px; }
