@@ -111,6 +111,12 @@ python -m http.server 8000
 
 Åpne deretter `http://localhost:8000`.
 
+`python -m http.server` sier ikke noe om hurtigbuffer, så nettleseren kan blande gamle og nye moduler etter en endring. Får du «Appen kunne ikke starte», tøm hurtigbufferen eller slå den av i utviklerverktøyene.
+
+### Publisering
+
+Push til `main` publiserer på GitHub Pages. Før opplasting kjører workflowen `node scripts/version-assets.mjs`, som legger et import map i `index.html` der hver modul får et versjonsnummer ut fra innholdet (`selection.mjs?v=…`). Da henter nettleseren nye filer etter hver publisering i stedet for å blande dem med gamle. Resultatet skal ikke committes.
+
 ### Tabell-labels
 
 `fhi_table_label_mapping.csv` gir tabellene lesbare navn og temaer. FHI gir ofte en tabell ny `tableId` når den får ny årgang, ny struktur eller nytt innhold, så filen må vedlikeholdes:
