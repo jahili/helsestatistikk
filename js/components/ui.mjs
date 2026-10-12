@@ -42,7 +42,14 @@ export const Icon = {
     warning: (size) => svg(size || 16, [
         h('path', { key: 1, d: 'M12 3l10 18H2L12 3z' }),
         h('path', { key: 2, d: 'M12 10v5M12 18h.01' })
-    ])
+    ]),
+    link: (size) => svg(size || 16, [
+        h('path', { key: 1, d: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1' }),
+        h('path', { key: 2, d: 'M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1' })
+    ]),
+    chart: (size) => svg(size || 16, h('path', { d: 'M4 4v16h16M8 15l4-4 3 3 5-6' })),
+    code: (size) => svg(size || 16, h('path', { d: 'M9 7l-5 5 5 5M15 7l5 5-5 5' })),
+    sliders: (size) => svg(size || 16, h('path', { d: 'M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4' }))
 };
 
 export function Logo() {

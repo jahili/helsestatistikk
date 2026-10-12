@@ -910,24 +910,59 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
 }
 .endpoint-link { font-family: var(--font-mono); font-size: 12px; }
 
-.preview-empty {
+/* ---------- Steg 4: Data ---------- */
+.selection-bar {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
+    gap: 12px 16px;
     flex-wrap: wrap;
-    gap: 16px;
-    padding: 28px;
-    border: 1px dashed var(--line-input);
+    padding: 12px 14px;
+    border: 1px solid var(--line);
     border-radius: var(--r-card);
-    background: var(--surface);
+    background: var(--surface-2);
 }
-.preview-empty-text { display: flex; align-items: center; gap: 14px; }
-.preview-empty-text > svg { flex-shrink: 0; color: var(--accent); }
-.preview-empty-text > span { display: flex; flex-direction: column; }
-.preview-title { font-size: 15px; font-weight: 600; }
+.selection-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 20px; flex: 1 1 400px; min-width: 0; }
+.selection-item { display: flex; flex-direction: column; min-width: 0; font-size: 13px; }
+.selection-label { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-help); }
+.selection-value { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px; }
+.data-card { display: flex; flex-direction: column; gap: 16px; }
+.data-head { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin: -4px 0 0; }
+.data-tabs { display: flex; gap: 4px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.data-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 12px;
+    margin-bottom: -1px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.data-tab:hover { color: var(--text); }
+.data-tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.data-info { font-size: 12px; color: var(--text-help); padding-bottom: 8px; }
+.data-panel { min-width: 0; }
+.api-tab { display: flex; flex-direction: column; gap: 16px; }
+.api-format { display: flex; flex-direction: column; gap: 6px; max-width: 420px; }
+.table-view { display: flex; flex-direction: column; gap: 12px; }
+.table-mode { max-width: 220px; }
+.table-tools { display: flex; align-items: flex-end; gap: 12px 20px; flex-wrap: wrap; }
+.table-fixed { font-size: 13px; color: var(--text-muted); padding-bottom: 8px; }
+.pivot-table th.pivot-key { position: sticky; left: 0; z-index: 1; background: var(--surface); font-weight: 500; text-align: left; }
+.pivot-table thead th:first-child { left: 0; z-index: 2; }
+.pivot-table th.pivot-key.is-repeated { border-bottom-color: transparent; }
+.pivot-table td.is-missing { color: var(--text-help); }
+.chart-grid { display: grid; gap: 16px; }
+.chart-panel { min-width: 0; }
+.chart-panel-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
 
-.preview-card { display: flex; flex-direction: column; gap: 12px; }
-.preview-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
 .preview-scroll {
     max-height: 480px;
     overflow: auto;
@@ -953,7 +988,6 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
 .preview-table td.num, .preview-table th.num { text-align: right; }
 .preview-table td.num, .preview-table td.mono { font-family: var(--font-mono); font-size: 12px; }
 .preview-table tbody tr:hover { background: var(--surface-2); }
-.preview-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 /* ---------- Figur ---------- */
 .chart-view { display: flex; flex-direction: column; gap: 12px; }
@@ -1070,7 +1104,6 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
     .geo-bulk { display: none; }
 
     .query-side { flex-basis: 100%; }
-    .preview-empty { padding: 20px; }
 
     .toast { bottom: 84px; }
 }

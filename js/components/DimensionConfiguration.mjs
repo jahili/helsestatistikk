@@ -307,26 +307,14 @@ function renderDimensionCard(ctx, dimension) {
     );
 }
 
-// Svarformat, forventet antall rader og maks rader. Vises i sidekolonnen (og i innholdet på mobil).
+// Forventet antall rader og maks rader. Vises i sidekolonnen (og i innholdet på mobil).
+// Svarformatet velges i fanen «API og Power BI» i steg 4.
 export function renderQuerySettings(ctx, prefix) {
     const rows = ctx.rows;
     const max = parseInt(ctx.maxRowCount, 10);
     const overMax = !isNaN(max) && max > 0 && rows.total > max;
     const advancedId = prefix + '-advanced';
     return h('div', { className: 'query-settings' },
-        h('div', { className: 'settings-group' },
-            h('span', { className: 'settings-label', id: prefix + '-format-label' }, 'Svarformat'),
-            h(Segment, {
-                label: 'Svarformat',
-                value: ctx.responseFormat,
-                onChange: ctx.setResponseFormat,
-                options: [
-                    { value: 'json-stat2', label: 'JSON-stat2' },
-                    { value: 'csv2', label: 'CSV · navn' },
-                    { value: 'csv3', label: 'CSV · koder' }
-                ]
-            })
-        ),
         h('div', { className: 'rows-box' + (overMax || rows.total === 0 ? ' is-warning' : '') },
             h('span', { className: 'rows-label' }, 'Forventet antall rader'),
             h('span', { className: 'rows-value' },
@@ -366,15 +354,15 @@ export function renderVariablesStep(ctx) {
     const dims = Array.isArray(ctx.dimensions) ? ctx.dimensions : [];
     return h(React.Fragment, null,
         h(StepHeading, {
-            eyebrow: '03 · VARIABLER',
+            eyebrow: '03 · UTVALG',
             title: table ? ctx.getTableLabel(table) : 'Variabler',
-            subtitle: 'Alt er valgt som standard. Snevre inn bare det du trenger.',
+            subtitle: 'Standardutvalget gir en oversiktlig figur. Velg flere eller færre verdier og trykk «Vis data».',
             actions: [
                 h(Button, {
                     key: 'info', size: 'sm', icon: Icon.info(16),
                     onClick: function() { ctx.fetchMetadata(source.id, table.tableId, { openModal: true }); }
                 }, 'Om tabellen'),
-                h(Button, { key: 'reset', size: 'sm', onClick: ctx.resetAllDimensions, disabled: ctx.filteredCount === 0 }, 'Nullstill alle')
+                h(Button, { key: 'reset', size: 'sm', onClick: ctx.resetAllDimensions }, 'Tilbake til standard')
             ]
         }),
         ctx.firstSentence && h('p', { className: 'step-lead' }, ctx.firstSentence),
@@ -394,6 +382,6 @@ export function renderVariablesActions(ctx) {
             disabled: ctx.loading || ctx.dimensions.length === 0,
             onClick: ctx.buildFinalQuery,
             trailingIcon: Icon.arrowRight()
-        }, 'Generer spørring')
+        }, 'Vis data')
     );
 }

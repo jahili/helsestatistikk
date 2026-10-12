@@ -20,7 +20,7 @@ export function Header(props) {
             h(Logo),
             h('div', { className: 'brand-text' },
                 h('span', { className: 'brand-title' }, 'FHI API Query Builder'),
-                h('span', { className: 'brand-subtitle' }, 'Spørringer mot FHIs åpne statistikk-API · JSON, Power Query og CSV')
+                h('span', { className: 'brand-subtitle' }, 'Statistikk fra FHI som figur, tabell og API-spørring')
             )
         ),
         h('nav', { className: 'header-nav', 'aria-label': 'Lenker' },
@@ -56,11 +56,11 @@ export function Credits(props) {
     );
 }
 
-// Sidekolonnen «Din spørring»: stegliste, valgfritt tips og sticky handlingsfelt.
+// Sidekolonnen «Ditt utvalg»: stegliste, valgfritt tips og sticky handlingsfelt.
 export function Sidebar(props) {
     return h('aside', { className: 'sidebar', 'aria-labelledby': 'sidebar-heading' },
         h('div', { className: 'sidebar-body' },
-            h('h2', { id: 'sidebar-heading', className: 'section-label sidebar-heading' }, 'Din spørring'),
+            h('h2', { id: 'sidebar-heading', className: 'section-label sidebar-heading' }, 'Ditt utvalg'),
             h(StepList, { step: props.step, items: props.items }),
             props.tip && h('div', { className: 'sidebar-tip' },
                 h('span', { className: 'sidebar-tip-title' }, 'Tips'),

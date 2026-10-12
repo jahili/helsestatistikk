@@ -4,13 +4,13 @@
 
 # FHI API Query Builder
 
-En interaktiv web-applikasjon som gjør det enkelt å bygge og kjøre spørringer mot FHIs åpne statistikk-API.
+En interaktiv web-applikasjon som viser statistikk fra FHIs åpne statistikk-API som figur og tabell, og lager spørringer du kan bruke videre i API-kall og Power BI.
 
 [Publisert versjon](https://jahili.github.io/helsestatistikk/)
 
 ## Hva er det?
 
-FHI API Query Builder er et visuelt verktøy som lar deg utforske og hente data fra [Folkehelseinstituttets statistikk-API](https://www.fhi.no/ta/statistikkalender_og_statistikk/apen-api-og-statistikk/) uten å måtte skrive API-kall manuelt. Appen har et brukervennlig grensesnitt hvor du velger data interaktivt, og får tilbake den JSON-spørringen du kan bruke i dine egne applikasjoner.
+FHI API Query Builder er et visuelt verktøy som lar deg utforske og hente data fra [Folkehelseinstituttets statistikk-API](https://www.fhi.no/ta/statistikkalender_og_statistikk/apen-api-og-statistikk/) uten å måtte skrive API-kall manuelt. Når du velger en tabell, viser appen dataene med en gang. Du kan endre utvalget, bytte mellom figur og tabell, laste ned, dele en lenke til visningen, og hente JSON-spørringen eller Power Query-koden for å bruke dataene i egne applikasjoner.
 
 ## Brukstilfeller
 
@@ -31,19 +31,22 @@ FHI API Query Builder er et visuelt verktøy som lar deg utforske og hente data 
 
 3. **Velg tabell** - Når du har valgt en kilde, velger du hvilken tabell du ønsker
    - Du kan søke i tabellene for å finne det du trenger
+   - Appen henter dataene med en gang, med et standardutvalg: de siste ti årene, hele landet og fylkene, og totalverdier for store dimensjoner
 
-4. **Konfigurer dimensjoner** - Her velger du hvilke variabler og verdier du vil ha med
-   - **Filtertype**: Velg spesifikke verdier, alle verdier, eller for tidsvariabler - siste X år
-   - **Geografi**: For geografiske data kan du velge alle kommuner, enkelt fylke, eller spesifikke kommune/bydel
-   - **Tidsperiode**: For år-dimensjonen kan du velge enkeltår, eller siste X år
-   - **Response format**: Velg JSON-stat2, CSV2 med labels eller CSV3 med koder
-   - Klikk på "Informasjon om tabellen" for detaljer om hva tabellen inneholder
+4. **Se dataene** - I steg 4 velger du visning:
+   - **Figur**: linjediagram når tiden varierer, ellers liggende søyler. Dimensjoner som ikke får plass, låses til én verdi i nedtrekksmenyer, eller deles opp i små separate diagrammer med felles akse. Søylediagram langs geografi kan vise fylker, kommuner eller bydeler. Figuren lastes ned som PNG eller SVG
+   - **Tabell**: pivottabell med valgfri dimensjon i kolonnene (lastes ned som CSV), eller liste med de første radene
+   - **API og Power BI**: JSON-spørringen, Power Query (M) og cURL, svarformat og endepunkter
+   - «Last ned som CSV» gir alle dataene i utvalget, og «Kopier lenke til visningen» gir en lenke som åpner samme tabell, utvalg og visning
 
-5. **Kopier eller last ned** - I siste skjerm:
-   - Kopier JSON-spørringen, eller bytt til Power Query-fanen for innbyggingskode til Power BI/Excel
-   - Hent forhåndsvisning av data
-   - Last ned forhåndsvisningen som CSV-fil
-   - Vis dataene som figur (linjediagram over tid, søylediagram ellers) og last den ned som PNG eller SVG
+5. **Endre utvalg** - I steg 3 velger du hvilke verdier dataene skal vise, og trykker «Vis data»
+   - **Filtertype**: Velg spesifikke verdier, alle verdier, mønster (wildcard), eller for tidsvariabler et antall år
+   - **Geografi**: Velg fylker, kommuner eller bydeler i et tre med søk
+   - Klikk på «Om tabellen» for detaljer om hva tabellen inneholder
+
+### Lenker
+
+Valgene lagres i adressen, f.eks. `#kilde=nokkel&tabell=366&v.GEO=0,03,32&vis=tabell`. Lenken kan deles og bokmerkes. Hvis FHI har gitt tabellen ny id, eller noen av verdiene ikke finnes lenger, sier appen fra og viser det som fortsatt finnes.
 
 ### Eksempel
 
@@ -51,8 +54,8 @@ Hvis du vil hente dødsfall av demens (inkl. Alzheimers sykdom) fordelt på alde
 
 1. Velg "Dødsårsaksregisteret (DÅR)" som kilde
 2. Velg tabellen "Dødsfall av demens (inkl. Alzheimers sykdom) etter alder" under kategorien "Demens"
-3. Konfigurer dimensjonene (Dødsår, Alder, Dødsårsak, Måltall) - la stå på "Alle" for å ta med alt
-4. Kopier JSON-spørringen eller hent forhåndsvisning og last ned som CSV
+3. Se figuren over de siste årene fordelt på alder, eller bytt til tabell
+4. Trykk «Endre utvalg» for å ta med flere år, og last ned som CSV eller hent spørringen i fanen «API og Power BI»
 
 ## Om FHI Statistikk API
 
@@ -93,8 +96,8 @@ Alt kjører i nettleseren din - ingen backend-server er nødvendig.
 
 - `index.html` — HTML-skall, laster `js/app.js` som ES-modul
 - `js/app.js` — hovedkomponent: state, effekter og sammensetning av skjermbildene
-- `js/lib/` — ren logikk (CSV-parsing, tabell-label-oppslag, geografi-gruppering, spørringsbygging, Power Query- og cURL-generering, forhåndsvisning/CSV-eksport, JSON-stat til lang tabell og figurvalg, radtelling, formatering, sikker HTML-rendering, syntax-highlighting) — hver fil har en tilhørende `*.test.mjs`
-- `js/components/` — `ui.mjs` (basiskomponenter: Button, Segment, Chip, Badge, Card m.fl.), `StepList.mjs`, `Layout.mjs` (header og sidekolonne) og ett skjermbilde per steg
+- `js/lib/` — ren logikk (CSV-parsing, tabell-label-oppslag, geografi-gruppering, spørringsbygging, Power Query- og cURL-generering, forhåndsvisning/CSV-eksport, JSON-stat til lang tabell og figurvalg, standardutvalg, valg i URL-en, pivottabell, radtelling, formatering, sikker HTML-rendering, syntax-highlighting) — hver fil har en tilhørende `*.test.mjs`
+- `js/components/` — `ui.mjs` (basiskomponenter: Button, Segment, Chip, Badge, Card m.fl.), `StepList.mjs`, `Layout.mjs` (header og sidekolonne) ett skjermbilde per steg (`DataStep.mjs` er steg 4 med fanene), `Chart.mjs` (figur), `TableView.mjs` (pivot og liste) og `QueryResult.mjs` (fanen «API og Power BI»)
 - `styles/app.css` — tokens, komponenter, layout, responsivt og mørkt tema (designspråk A, se `design/fhi-redesign.md`)
 
 ### Kjøre lokalt

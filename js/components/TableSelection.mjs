@@ -151,7 +151,7 @@ export function renderTableStep(ctx) {
             h(StepHeading, {
                 eyebrow: '02 · TABELL',
                 title: source ? (source.title || source.name) : 'Tabell',
-                subtitle: 'Velg tabellen du vil bygge en spørring for'
+                subtitle: 'Velg tabellen du vil se data fra'
             }),
             h('div', { className: 'toolbar' },
                 h(SearchField, {
@@ -184,6 +184,6 @@ export function renderTableActions(ctx) {
     const t = ctx.highlightedTable;
     return t
         ? h(Button, { variant: 'primary', size: 'lg', block: true, onClick: function() { ctx.selectTable(t); }, trailingIcon: Icon.arrowRight() },
-            'Velg tabell ' + t.tableId)
+            'Vis data fra tabell ' + t.tableId)
         : h(Button, { variant: 'primary', size: 'lg', block: true, disabled: true }, 'Velg en tabell for å fortsette');
 }

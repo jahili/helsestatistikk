@@ -7,17 +7,20 @@ import { generatePowerQueryCode } from './lib/powerquery.mjs';
 import { expectedRows, isFiltered } from './lib/selection.mjs';
 import { formatNumber } from './lib/format.mjs';
 import { previewToCsv, csvFileName } from './lib/preview.mjs';
+import { defaultSelection } from './lib/defaults.mjs';
+import { encodeState, decodeState, applyUrlSelection } from './lib/urlState.mjs';
 import { Header, Sidebar, StepDots, Credits } from './components/Layout.mjs';
-import { Icon } from './components/ui.mjs';
+import { Icon, Alert } from './components/ui.mjs';
 import { renderSourceStep, renderSourceActions } from './components/SourceSelection.mjs';
 import { renderTableStep, renderTableActions } from './components/TableSelection.mjs';
 import { renderVariablesStep, renderVariablesActions } from './components/DimensionConfiguration.mjs';
-import { renderQueryStep, renderQueryActions } from './components/QueryResult.mjs';
+import { renderDataStep, renderDataActions } from './components/DataStep.mjs';
 import { renderMetadataModal, closeMetadataModal as closeMetadataModalImpl } from './components/MetadataModal.mjs';
 
 const { useState, useEffect, useRef, createElement: h } = React;
 const API_BASE = 'https://statistikk-data.fhi.no/api/open/v1';
-const FORMAT_LABELS = { 'json-stat2': 'JSON-stat2', 'csv2': 'CSV · navn', 'csv3': 'CSV · koder' };
+const VIEW_LABELS = { figur: 'Figur', tabell: 'Tabell', api: 'API og Power BI' };
+const EMPTY_CHART = { filters: {}, geoLevel: null, facet: null };
 
 function readStoredTheme() {
     try {
@@ -74,7 +77,20 @@ function FHIQueryBuilder() {
     const [wildcardDrafts, setWildcardDrafts] = useState({});
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [pendingCsv, setPendingCsv] = useState(false);
-    const [previewView, setPreviewView] = useState('table');
+    // Data-steget: fane, figurvalg, tabellvisning og utvalget som ga dataene som vises.
+    const [dataView, setDataView] = useState('figur');
+    const [chartState, setChartState] = useState(EMPTY_CHART);
+    const [tableMode, setTableMode] = useState('pivot');
+    const [pivotCol, setPivotCol] = useState(null);
+    const [appliedSelection, setAppliedSelection] = useState(null);
+    const [notice, setNotice] = useState(null);
+    const openSeq = useRef(0);
+    const dataSeq = useRef(0);
+    // Lenke-tilstand: valgene i URL-en leses ved oppstart, og skrives tilbake når de endres.
+    const urlRequest = useRef(decodeState(window.location.hash));
+    const [urlReady, setUrlReady] = useState(!urlRequest.current.sourceId);
+    const [urlRevision, setUrlRevision] = useState(0);
+    const lastHash = useRef(window.location.hash.replace(/^#/, ''));
     const globalSearchRef = useRef(null);
     const mainRef = useRef(null);
     const copyTimer = useRef(null);
@@ -201,7 +217,9 @@ function FHIQueryBuilder() {
         }
     }
 
-    async function fetchDimensions(sourceId, tableId) {
+    // Henter dimensjonene og setter standardutvalget, med valgene fra en lenke oppå (urlDims).
+    // Returnerer { dims, config, wildcardDims } eller null ved feil.
+    async function fetchDimensions(sourceId, tableId, urlDims) {
         setLoading(true);
         setError(null);
         try {
@@ -225,16 +243,19 @@ function FHIQueryBuilder() {
                 return dim;
             });
 
+            const defaults = defaultSelection(dimensionsArray);
+            const fromUrl = applyUrlSelection(dimensionsArray, defaults, urlDims || {});
+            if (fromUrl.dropped > 0) {
+                setNotice(fromUrl.dropped + ' verdi' + (fromUrl.dropped === 1 ? '' : 'er') + ' fra lenken finnes ikke lenger i tabellen og er hoppet over.');
+            }
             setDimensions(dimensionsArray);
-
-            const initialConfig = {};
-            dimensionsArray.forEach(function(dim) {
-                initialConfig[dim.code] = { filter: 'all', values: ['*'], selectedCategories: [] };
-            });
-            setQueryConfig(initialConfig);
+            setQueryConfig(fromUrl.config);
+            setWildcardDims(fromUrl.wildcardDims);
+            return { dims: dimensionsArray, config: fromUrl.config, wildcardDims: fromUrl.wildcardDims };
         } catch (err) {
             setError(err.message);
             setDimensions([]);
+            return null;
         } finally {
             setLoading(false);
         }
@@ -276,16 +297,21 @@ function FHIQueryBuilder() {
         }
     }
 
-    async function fetchPreview() {
-        if (!finalQuery) return;
+    function fetchPreview() {
+        if (finalQuery) fetchData(finalQuery, selectedSource, selectedTable);
+    }
+
+    // Henter dataene for en spørring som JSON-stat2. Svar på eldre forespørsler ignoreres.
+    async function fetchData(query, source, table) {
+        const seq = ++dataSeq.current;
         setLoading(true);
         setError(null);
         try {
-            const previewQuery = JSON.parse(JSON.stringify(finalQuery));
+            const previewQuery = JSON.parse(JSON.stringify(query));
             previewQuery.response.format = 'json-stat2';
 
             const response = await fetch(
-                API_BASE + '/' + selectedSource.id + '/Table/' + selectedTable.tableId + '/data',
+                API_BASE + '/' + source.id + '/Table/' + table.tableId + '/data',
                 { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(previewQuery) }
             );
 
@@ -314,33 +340,55 @@ function FHIQueryBuilder() {
             } else {
                 data = await response.json();
             }
-            setPreviewData(data);
+            if (seq === dataSeq.current) setPreviewData(data);
         } catch (err) {
-            setError(err.message || 'Feil ved henting av preview');
+            if (seq === dataSeq.current) setError(err.message || 'Feil ved henting av data');
         } finally {
-            setLoading(false);
+            if (seq === dataSeq.current) setLoading(false);
         }
     }
 
-    function selectSourceAndTable(source, table) {
+    // Åpner en tabell med standardutvalget og henter dataene med en gang.
+    // restore: valg fra en lenke ({ dims, step, view, format, maxRowCount, chart }).
+    async function selectSourceAndTable(source, table, restore) {
+        const seq = ++openSeq.current;
+        const format = (restore && restore.format) || responseFormat;
+        const max = restore && restore.maxRowCount ? restore.maxRowCount : maxRowCount;
+        const targetStep = restore && restore.step === 3 ? 3 : 4;
         setSelectedSource(source);
         setSelectedTable(table);
         setDimensions([]);
         setQueryConfig({});
         setFinalQuery(null);
         setPreviewData(null);
+        setAppliedSelection(null);
         setTableSearch('');
         setGlobalSearch('');
         setShowMetadataModal(false);
-        fetchDimensions(source.id, table.tableId);
+        setNotice(null);
+        setError(null);
         fetchMetadata(source.id, table.tableId);
-        setStep(3);
+        setStep(targetStep);
         // Visningsvalg som hører til forrige tabell
         setHighlightedTable(table);
         setValueSearch({});
         setWildcardDims({});
         setWildcardDrafts({});
         setGeoSearch('');
+        setChartState(restore && restore.chart ? restore.chart : EMPTY_CHART);
+        setPivotCol(null);
+        if (restore) {
+            if (restore.view) setDataView(restore.view);
+            if (restore.format) setResponseFormat(restore.format);
+            if (restore.maxRowCount) setMaxRowCount(restore.maxRowCount);
+        }
+
+        const result = await fetchDimensions(source.id, table.tableId, restore && restore.dims);
+        if (!result || seq !== openSeq.current) return;
+        const query = buildQuery(result.dims, result.config, format, max);
+        setFinalQuery(query);
+        setAppliedSelection({ config: result.config, wildcardDims: result.wildcardDims });
+        if (targetStep === 4) fetchData(query, source, table);
     }
 
     function selectSource(source) {
@@ -352,6 +400,10 @@ function FHIQueryBuilder() {
         setPreviewData(null);
         setTableSearch('');
         setExpandedCategories({});
+        setAppliedSelection(null);
+        setNotice(null);
+        openSeq.current++;
+        dataSeq.current++;
         tablesSourceId.current = source.id;
         fetchTables(source.id);
         setStep(2);
@@ -403,6 +455,72 @@ function FHIQueryBuilder() {
         }
     }, [step, selectedSource]);
 
+    // Lenke: når kildene og tabellene er hentet, gå til kilden/tabellen i URL-en med valgene derfra.
+    useEffect(() => {
+        if (urlReady || loading || sources.length === 0) return;
+        const request = urlRequest.current;
+        setUrlReady(true);
+        const source = sources.find(function(s) { return s.id === request.sourceId; });
+        if (!source) {
+            setNotice('Kilden «' + request.sourceId + '» fra lenken finnes ikke i FHI-API-et.');
+            return;
+        }
+        if (request.tableId == null) {
+            selectSource(source);
+            return;
+        }
+        const table = allTables.find(function(t) { return t.sourceId === source.id && String(t.tableId) === String(request.tableId); });
+        if (!table) {
+            selectSource(source);
+            setNotice('Tabell ' + request.tableId + ' fra lenken finnes ikke lenger i ' + (source.title || source.name) +
+                '. FHI gir ofte tabeller ny id når de får ny årgang eller struktur. Velg tabellen på nytt i listen.');
+            return;
+        }
+        selectSourceAndTable(source, table, request);
+    }, [urlReady, loading, sources, allTables, urlRevision]);
+
+    // En ny lenke limt inn i samme fane (bare fragmentet endres) gjenopprettes på samme måte.
+    useEffect(() => {
+        function handleHashChange() {
+            const hash = window.location.hash.replace(/^#/, '');
+            if (hash === lastHash.current) return;
+            lastHash.current = hash;
+            urlRequest.current = decodeState(hash);
+            if (!urlRequest.current.sourceId) { startOver(); return; }
+            setUrlReady(false);
+            setUrlRevision(function(n) { return n + 1; });
+        }
+        window.addEventListener('hashchange', handleHashChange);
+        return function() { window.removeEventListener('hashchange', handleHashChange); };
+    });
+
+    // Skriv valgene til URL-en. Steg 4 bruker utvalget som ga dataene, steg 3 utvalget under arbeid.
+    useEffect(() => {
+        if (!urlReady) return;
+        let hash = '';
+        if (step >= 2 && selectedSource) {
+            const onTable = step >= 3 && selectedTable;
+            const selection = step === 4 ? appliedSelection : { config: queryConfig, wildcardDims: wildcardDims };
+            hash = encodeState({
+                sourceId: selectedSource.id,
+                tableId: onTable ? selectedTable.tableId : null,
+                step: step,
+                view: dataView,
+                format: responseFormat,
+                maxRowCount: maxRowCount,
+                dimensions: onTable && selection ? dimensions : [],
+                queryConfig: selection ? selection.config : {},
+                wildcardDims: selection ? selection.wildcardDims : {},
+                chart: step === 4 ? chartState : null
+            });
+        }
+        if (hash === lastHash.current) return;
+        lastHash.current = hash;
+        const url = window.location.pathname + window.location.search + (hash ? '#' + hash : '');
+        window.history.replaceState(null, '', url);
+    }, [urlReady, step, selectedSource, selectedTable, dimensions, queryConfig, wildcardDims, appliedSelection,
+        dataView, responseFormat, maxRowCount, chartState]);
+
     function updateDimensionConfig(dimCode, updates) {
         setQueryConfig(function(prev) {
             const newConfig = Object.assign({}, prev);
@@ -412,19 +530,45 @@ function FHIQueryBuilder() {
     }
 
     function resetAllDimensions() {
-        dimensions.forEach(function(dim) {
-            updateDimensionConfig(dim.code, { filter: 'all', values: ['*'], selectedCategories: [] });
-        });
+        setQueryConfig(defaultSelection(dimensions));
         setWildcardDims({});
         setWildcardDrafts({});
     }
 
+    // Steg 3 «Vis data»: bygg spørringen fra utvalget og hent dataene på nytt.
     function buildFinalQuery() {
-        setFinalQuery(buildQuery(dimensions, queryConfig, responseFormat, maxRowCount));
+        const query = buildQuery(dimensions, queryConfig, responseFormat, maxRowCount);
+        setFinalQuery(query);
+        setAppliedSelection({ config: queryConfig, wildcardDims: wildcardDims });
+        setPreviewData(null);
+        setNotice(null);
         setStep(4);
+        fetchData(query, selectedSource, selectedTable);
+    }
+
+    // Svarformatet gjelder bare spørringen som kopieres; dataene i appen hentes alltid som JSON-stat2.
+    function changeResponseFormat(format) {
+        setResponseFormat(format);
+        setFinalQuery(function(prev) {
+            return prev ? Object.assign({}, prev, { response: Object.assign({}, prev.response, { format: format }) }) : prev;
+        });
+    }
+
+    function updateChartState(updates) {
+        setChartState(function(prev) { return Object.assign({}, prev, updates); });
+    }
+
+    function copyLink() {
+        copyToClipboard(window.location.href, 'link');
     }
 
     function startOver() {
+        openSeq.current++;
+        dataSeq.current++;
+        setNotice(null);
+        setError(null);
+        setAppliedSelection(null);
+        setLoading(false);
         setStep(1);
         setSelectedSource(null);
         setSelectedTable(null);
@@ -478,6 +622,10 @@ function FHIQueryBuilder() {
 
     const rows = expectedRows(dimensions, queryConfig);
     const filteredCount = dimensions.filter(function(dim) { return isFiltered(dim, queryConfig[dim.code]); }).length;
+    const selectionChanged = Boolean(appliedSelection) && (
+        JSON.stringify(appliedSelection.config) !== JSON.stringify(queryConfig) ||
+        JSON.stringify(appliedSelection.wildcardDims || {}) !== JSON.stringify(wildcardDims));
+    const dataFileBase = csvFileName(selectedSource && selectedSource.id, selectedTable && selectedTable.tableId).replace(/\.csv$/, '');
 
     // Alt stegkomponentene trenger, samlet ett sted.
     const ctx = {
@@ -486,13 +634,15 @@ function FHIQueryBuilder() {
         dimensions, queryConfig, finalQuery, previewData, responseFormat, maxRowCount,
         globalSearch, tableSearch, outputFormat, geoSearch, expandedCounties, expandedMunicipalities,
         expandedCategories, firstSentence, geoMappingUrl, copiedKey, publisherFilter, tableSort,
-        tablePreviewDims, valueSearch, wildcardDims, wildcardDrafts, showAdvanced, pendingCsv, rows, filteredCount, previewView, effectiveTheme,
+        tablePreviewDims, valueSearch, wildcardDims, wildcardDrafts, showAdvanced, pendingCsv, rows, filteredCount, effectiveTheme,
+        dataView, chartState, tableMode, pivotCol, appliedSelection, selectionChanged, notice, dataFileBase,
         globalSearchRef,
         selectSource, selectSourceAndTable, selectTable, highlightTable, updateDimensionConfig, resetAllDimensions,
-        buildFinalQuery, fetchPreview, fetchMetadata, copyToClipboard, downloadCsv, startOver,
+        buildFinalQuery, fetchPreview, fetchMetadata, copyToClipboard, copyLink, downloadCsv, startOver,
         setGlobalSearch, setTableSearch, setOutputFormat, setGeoSearch, setExpandedCounties, setExpandedMunicipalities,
-        setExpandedCategories, setResponseFormat, setMaxRowCount, setPublisherFilter, setTableSort,
-        setValueSearch, setWildcardDims, setWildcardDrafts, setShowAdvanced, setPreviewView,
+        setExpandedCategories, setResponseFormat: changeResponseFormat, setMaxRowCount, setPublisherFilter, setTableSort,
+        setValueSearch, setWildcardDims, setWildcardDrafts, setShowAdvanced,
+        setDataView, updateChartState, setTableMode, setPivotCol, setNotice,
         getTableLabel: boundGetTableLabel, getTableCategory: boundGetTableCategory, isUnmapped,
         generatePowerQueryCode: boundGeneratePowerQueryCode, getGeographyGroups, findMetricDimension
     };
@@ -515,18 +665,22 @@ function FHIQueryBuilder() {
             onSelect: function() { if (selectedSource) setStep(2); }
         },
         {
-            num: 3, title: 'Variabler',
-            summary: step === 3
-                ? (dimensions.length ? filteredCount + ' av ' + dimensions.length + ' dimensjoner filtrert' : 'Laster dimensjoner …')
-                : finalQuery && formatNumber(rows.total) + ' rader · ' + FORMAT_LABELS[finalQuery.response.format],
+            num: 3, title: 'Utvalg',
+            summary: dimensions.length
+                ? formatNumber(rows.total) + ' verdier · ' + filteredCount + ' av ' + dimensions.length + ' dimensjoner avgrenset'
+                : (selectedTable ? 'Laster dimensjoner …' : 'Velg verdier i hver dimensjon'),
             available: Boolean(selectedTable),
             onSelect: function() { if (selectedTable) setStep(3); }
         },
         {
-            num: 4, title: 'Spørring',
-            summary: 'Klar til bruk',
+            num: 4, title: 'Data',
+            summary: step === 4 && loading ? 'Henter data …' : (finalQuery ? VIEW_LABELS[dataView] : 'Figur, tabell og spørring'),
             available: Boolean(finalQuery),
-            onSelect: function() { if (finalQuery) setStep(4); }
+            onSelect: function() {
+                if (!finalQuery) return;
+                setStep(4);
+                if (!previewData && !loading) fetchPreview();
+            }
         }
     ];
 
@@ -536,7 +690,7 @@ function FHIQueryBuilder() {
     if (step === 1) {
         main = renderSourceStep(ctx);
         actions = renderSourceActions(ctx);
-        tip = 'Vet du hva tabellen heter? Søk på tvers av alle kilder og hopp rett til steg 03.';
+        tip = 'Vet du hva tabellen heter? Søk på tvers av alle kilder og gå rett til dataene.';
     } else if (step === 2) {
         main = renderTableStep(ctx);
         actions = renderTableActions(ctx);
@@ -544,8 +698,8 @@ function FHIQueryBuilder() {
         main = renderVariablesStep(ctx);
         actions = renderVariablesActions(ctx);
     } else if (step === 4) {
-        main = renderQueryStep(ctx);
-        actions = renderQueryActions(ctx);
+        main = renderDataStep(ctx);
+        actions = renderDataActions(ctx);
     }
 
     return h('div', { className: 'app' },
@@ -556,12 +710,13 @@ function FHIQueryBuilder() {
             h(Sidebar, { step: step, items: stepItems, tip: tip, actions: actions }),
             h('main', { id: 'main-content', ref: mainRef, tabIndex: -1, className: 'content content-step' + step, 'aria-label': 'Hovedinnhold' },
                 h(StepDots, { step: step, items: stepItems }),
+                step !== 4 && notice && h(Alert, { tone: 'warning' }, notice),
                 main,
                 h(Credits, { className: 'mobile-only', showLinks: true })
             )
         ),
         h('div', { className: 'toast', role: 'status', 'aria-live': 'polite' },
-            copiedKey ? h('span', { className: 'toast-inner' }, Icon.check(14), 'Kopiert til utklippstavlen') : null
+            copiedKey ? h('span', { className: 'toast-inner' }, Icon.check(14), copiedKey === 'link' ? 'Lenken er kopiert' : 'Kopiert til utklippstavlen') : null
         )
     );
 }
