@@ -669,6 +669,10 @@ function FHIQueryBuilder() {
         generatePowerQueryCode: boundGeneratePowerQueryCode, getGeographyGroups, findMetricDimension
     };
 
+    // I steg 2 kan en annen tabell være markert enn den som er åpnet; da går «Gå til» Utvalg til den markerte.
+    const highlightDiffers = step === 2 && Boolean(highlightedTable) &&
+        (!selectedTable || String(highlightedTable.tableId) !== String(selectedTable.tableId));
+
     const stepItems = [
         {
             num: 1, title: 'Kilde',
@@ -691,15 +695,18 @@ function FHIQueryBuilder() {
             summary: dimensions.length
                 ? formatNumber(rows.total) + ' verdier · ' + filteredCount + ' av ' + dimensions.length + ' dimensjoner avgrenset'
                 : (selectedTable ? 'Laster dimensjoner …' : 'Velg verdier i hver dimensjon'),
-            available: Boolean(selectedTable),
-            onSelect: function() { if (selectedTable) setStep(3); }
+            available: Boolean(selectedTable) || highlightDiffers,
+            onSelect: function() {
+                if (highlightDiffers) selectTable(highlightedTable);
+                else if (selectedTable) setStep(3);
+            }
         },
         {
             num: 4, title: 'Data',
             summary: step === 4 && dataLoading ? 'Henter data …' : (finalQuery ? VIEW_LABELS[dataView] : 'Figur, tabell og spørring'),
-            available: Boolean(finalQuery),
+            available: Boolean(finalQuery) && !highlightDiffers,
             onSelect: function() {
-                if (!finalQuery) return;
+                if (!finalQuery || highlightDiffers) return;
                 setStep(4);
                 if (!previewData && !dataLoading) fetchPreview();
             }
