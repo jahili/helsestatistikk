@@ -19,7 +19,7 @@ export function Header(props) {
         h('div', { className: 'brand' },
             h(Logo),
             h('div', { className: 'brand-text' },
-                h('span', { className: 'brand-title' }, 'FHI API Query Builder'),
+                h('span', { className: 'brand-title' }, 'Helsestatistikk'),
                 h('span', { className: 'brand-subtitle' }, 'Statistikk fra FHI som figur, tabell og API-spørring')
             )
         ),

@@ -2,7 +2,7 @@
 ![License](https://img.shields.io/github/license/jahili/helsestatistikk?style=for-the-badge&color=007db9)
 
 
-# FHI API Query Builder
+# Helsestatistikk
 
 En interaktiv web-applikasjon som viser statistikk fra FHIs åpne statistikk-API som figur og tabell, og lager spørringer du kan bruke videre i API-kall og Power BI.
 
@@ -10,7 +10,7 @@ En interaktiv web-applikasjon som viser statistikk fra FHIs åpne statistikk-API
 
 ## Hva er det?
 
-FHI API Query Builder er et visuelt verktøy som lar deg utforske og hente data fra [Folkehelseinstituttets statistikk-API](https://www.fhi.no/ta/statistikkalender_og_statistikk/apen-api-og-statistikk/) uten å måtte skrive API-kall manuelt. Når du velger en tabell, viser appen dataene med en gang. Du kan endre utvalget, bytte mellom figur og tabell, laste ned, dele en lenke til visningen, og hente JSON-spørringen eller Power Query-koden for å bruke dataene i egne applikasjoner.
+Helsestatistikk er et visuelt verktøy som lar deg utforske og hente data fra [Folkehelseinstituttets statistikk-API](https://www.fhi.no/ta/statistikkalender_og_statistikk/apen-api-og-statistikk/) uten å måtte skrive API-kall manuelt. Du velger tabell og utvalg, og ser dataene som figur eller tabell. Du kan endre utvalget, bytte mellom figur og tabell, laste ned, dele en lenke til visningen, og hente JSON-spørringen eller Power Query-koden for å bruke dataene i egne applikasjoner.
 
 ## Brukstilfeller
 
