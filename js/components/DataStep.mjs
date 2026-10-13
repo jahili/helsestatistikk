@@ -70,7 +70,7 @@ function sourceLabel(ctx) {
 
 function renderPanel(ctx) {
     if (ctx.dataView === 'api') return renderApiTab(ctx);
-    if (ctx.loading && !ctx.previewData) return h(Status, null, ctx.finalQuery ? 'Henter data …' : 'Laster dimensjoner …');
+    if ((ctx.loading || ctx.dataLoading) && !ctx.previewData) return h(Status, null, ctx.finalQuery ? 'Henter data …' : 'Laster dimensjoner …');
     if (!ctx.previewData) {
         return ctx.error
             ? h(Button, { variant: 'outline', onClick: ctx.fetchPreview }, 'Prøv igjen')

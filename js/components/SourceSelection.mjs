@@ -1,4 +1,4 @@
-import { Badge, Chip, StepHeading, SearchField, Alert, Status, Icon, Button } from './ui.mjs';
+import { Badge, Chip, StepHeading, SearchField, Alert, Status, Icon, Button, GeoLevels } from './ui.mjs';
 import { formatDateShort } from '../lib/format.mjs';
 
 const h = React.createElement;
@@ -46,6 +46,7 @@ function renderSearchResults(ctx) {
                                     h('code', { className: 'code-inline' }, table.sourceId)
                                 )
                             ),
+                            h(GeoLevels, { levels: ctx.getGeoLevels(table, table.sourceId) }),
                             table.modifiedAt && h('span', { className: 'row-date' }, formatDateShort(table.modifiedAt)),
                             h(Badge, null, table.tableId),
                             h('span', { className: 'row-arrow', 'aria-hidden': 'true' }, Icon.arrowRight(14))

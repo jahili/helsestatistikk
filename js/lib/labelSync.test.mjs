@@ -42,3 +42,10 @@ test('parseTableLabelRows tar med kilde og håndterer komma i fnutter og CRLF', 
     const r = parseTableLabelRows('source_id,tableId,title,label,category\r\nnokkel,1,"A, B","Lab, el","Tema"\r\n');
     assert.deepEqual(r, [{ sourceId: 'nokkel', tableId: '1', title: 'A, B', label: 'Lab, el', category: 'Tema' }]);
 });
+
+test('formatReport tar med tabeller som mangler geografiske nivåer', () => {
+    const md = formatReport({ missing: [], obsolete: [] }, '2026-10-13', [{ sourceId: 'nokkel', tableId: 999 }]);
+    assert.ok(md.includes('### Mangler geografiske nivåer (1)'));
+    assert.ok(md.includes('`nokkel/999`'));
+    assert.ok(!formatReport({ missing: [], obsolete: [] }, '2026-10-13').includes('geografiske'));
+});

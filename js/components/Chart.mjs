@@ -286,7 +286,12 @@ export function ChartView(props) {
         const cat = dim.categories.find(function(c) { return c.code === code; }) || dim.categories[0];
         return cat.label;
     };
-    const subtitle = lockedDims.map(function(d) { return d.label + ': ' + chosenLabel(d); })
+    // Dimensjoner med bare én verdi i utvalget (f.eks. ett år) vises ikke i figuren, så de står i undertittelen. Tid først.
+    const fixedDims = data.dimensions.filter(function(d) { return d.categories.length === 1; })
+        .sort(function(a, b) { return (b.role === 'time') - (a.role === 'time'); });
+    const fixedText = fixedDims.map(function(d) { return d.label + ': ' + d.categories[0].label; });
+    const subtitle = fixedText
+        .concat(lockedDims.map(function(d) { return d.label + ': ' + chosenLabel(d); }))
         .concat(facetDim ? ['Delt opp etter ' + facetDim.label.toLowerCase()] : [])
         .join(' · ');
     const allPoints = panels.reduce(function(acc, p) { return acc.concat(p.result.points); }, []);
@@ -318,6 +323,10 @@ export function ChartView(props) {
     };
 
     return h('div', { className: 'chart-view' },
+        h('div', { className: 'chart-head' },
+            h('h3', { className: 'chart-title' }, props.title),
+            fixedText.length > 0 && h('p', { className: 'chart-context' }, fixedText.join(' · '))
+        ),
         (lockedDims.length > 0 || levelOptions.length > 1 || facets.length > 0) && h('div', { className: 'chart-filters' },
             facets.length > 0 && h('div', { className: 'chart-filter' },
                 h('label', { className: 'field-label', htmlFor: 'chart-facet' }, 'Del opp etter'),

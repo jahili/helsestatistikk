@@ -24,7 +24,8 @@ function cell(text) {
     return String(text == null ? '' : text).trim().replace(/\|/g, '\\|').replace(/\s+/g, ' ');
 }
 
-export function formatReport(result, checkedAt) {
+// missingGeo (valgfri): tabeller som mangler i table_geo_levels.json.
+export function formatReport(result, checkedAt, missingGeo) {
     const lines = [
         REPORT_MARKER,
         'Den ukentlige sjekken fant forskjeller mellom `fhi_table_label_mapping.csv` og FHI-API-et (sjekket ' + checkedAt + ').',
@@ -49,6 +50,11 @@ export function formatReport(result, checkedAt) {
             lines.push('| `' + cell(r.sourceId) + '` | ' + cell(r.tableId) + ' | ' + cell(r.label) + ' | ' + cell(r.category) + ' |');
         });
         lines.push('');
+    }
+    if (missingGeo && missingGeo.length) {
+        lines.push('### Mangler geografiske nivåer (' + missingGeo.length + ')', '',
+            'Kjør `node scripts/update-geo-levels.mjs` og commit `table_geo_levels.json`, så viser tabelloversikten nivåene (N, F, K, B, LKS).', '',
+            missingGeo.map(function(t) { return '`' + cell(t.sourceId) + '/' + cell(t.tableId) + '`'; }).join(', '), '');
     }
     lines.push('Issuen oppdateres ved hver sjekk og lukkes automatisk når filen er i synk.');
     return lines.join('\n');

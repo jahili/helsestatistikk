@@ -1,7 +1,7 @@
 import { parseTableLabelsCSV } from './lib/csv.mjs';
 import { getTableLabel, getTableCategory, flattenCategories, isTableMapped, fallbackTableLabel, hasReadableTitle } from './lib/tableLabels.mjs';
 import { firstSentenceFromMetadata, labelFromMetadata } from './lib/metadata.mjs';
-import { getGeographyGroups } from './lib/geo.mjs';
+import { getGeographyGroups, geoLevelsOfDimensions } from './lib/geo.mjs';
 import { findMetricDimension, buildQuery } from './lib/query.mjs';
 import { generatePowerQueryCode } from './lib/powerquery.mjs';
 import { expectedRows, isFiltered } from './lib/selection.mjs';
@@ -48,6 +48,7 @@ function FHIQueryBuilder() {
     const [responseFormat, setResponseFormat] = useState('json-stat2');
     const [maxRowCount, setMaxRowCount] = useState('');
     const [loading, setLoading] = useState(false);
+    const [dataLoading, setDataLoading] = useState(false);
     const [error, setError] = useState(null);
     const [globalSearch, setGlobalSearch] = useState('');
     const [allTables, setAllTables] = useState([]);
@@ -60,6 +61,7 @@ function FHIQueryBuilder() {
     const [showMetadataModal, setShowMetadataModal] = useState(false);
     const [expandedMunicipalities, setExpandedMunicipalities] = useState({});
     const [tableLabels, setTableLabels] = useState({});
+    const [tableGeoLevels, setTableGeoLevels] = useState({});
     const [expandedCategories, setExpandedCategories] = useState({});
     const [geoMappingUrl] = useState('https://raw.githubusercontent.com/jahili/helsestatistikk/main/geo_mapping.csv');
 
@@ -98,6 +100,7 @@ function FHIQueryBuilder() {
     useEffect(() => {
         fetchSources();
         fetchTableLabels();
+        fetchTableGeoLevels();
     }, []);
 
     useEffect(() => {
@@ -203,6 +206,16 @@ function FHIQueryBuilder() {
         }
     }
 
+    // Geografiske nivåer per tabell (N, F, K, B, LKS, R), laget av scripts/update-geo-levels.mjs.
+    async function fetchTableGeoLevels() {
+        try {
+            const response = await fetch('./table_geo_levels.json');
+            if (response.ok) setTableGeoLevels(await response.json());
+        } catch (err) {
+            console.error('Kunne ikke hente geografiske nivåer:', err.message);
+        }
+    }
+
     async function fetchTables(sourceId) {
         setLoading(true);
         setError(null);
@@ -274,11 +287,12 @@ function FHIQueryBuilder() {
             const data = await response.json();
             let dims = data && !Array.isArray(data) && data.dimensions ? data.dimensions : data;
             if (!Array.isArray(dims)) throw new Error('Kunne ikke finne dimensions i API-responsen');
+            const geoLevels = geoLevelsOfDimensions(dims);
             dims = dims.map(function(dim) {
                 const category = dim.category || (dim.categories ? flattenCategories(dim.categories) : null);
                 return { code: dim.code, label: dim.label, count: category && category.index ? category.index.length : 0 };
             });
-            setTablePreviewDims(function(prev) { return Object.assign({}, prev, { [key]: { status: 'ok', dims: dims } }); });
+            setTablePreviewDims(function(prev) { return Object.assign({}, prev, { [key]: { status: 'ok', dims: dims, geoLevels: geoLevels } }); });
         } catch (err) {
             setTablePreviewDims(function(prev) { return Object.assign({}, prev, { [key]: { status: 'error', message: err.message } }); });
         }
@@ -304,7 +318,7 @@ function FHIQueryBuilder() {
     // Henter dataene for en spørring som JSON-stat2. Svar på eldre forespørsler ignoreres.
     async function fetchData(query, source, table) {
         const seq = ++dataSeq.current;
-        setLoading(true);
+        setDataLoading(true);
         setError(null);
         try {
             const previewQuery = JSON.parse(JSON.stringify(query));
@@ -344,17 +358,17 @@ function FHIQueryBuilder() {
         } catch (err) {
             if (seq === dataSeq.current) setError(err.message || 'Feil ved henting av data');
         } finally {
-            if (seq === dataSeq.current) setLoading(false);
+            if (seq === dataSeq.current) setDataLoading(false);
         }
     }
 
-    // Åpner en tabell med standardutvalget og henter dataene med en gang.
-    // restore: valg fra en lenke ({ dims, step, view, format, maxRowCount, chart }).
+    // Åpner en tabell i steg 3 med standardutvalget, og henter dataene i bakgrunnen så «Vis data» går raskt.
+    // restore: valg fra en lenke ({ dims, step, view, format, maxRowCount, chart }); lenker går rett til dataene.
     async function selectSourceAndTable(source, table, restore) {
         const seq = ++openSeq.current;
         const format = (restore && restore.format) || responseFormat;
         const max = restore && restore.maxRowCount ? restore.maxRowCount : maxRowCount;
-        const targetStep = restore && restore.step === 3 ? 3 : 4;
+        const targetStep = restore ? (restore.step === 3 ? 3 : 4) : 3;
         setSelectedSource(source);
         setSelectedTable(table);
         setDimensions([]);
@@ -388,7 +402,7 @@ function FHIQueryBuilder() {
         const query = buildQuery(result.dims, result.config, format, max);
         setFinalQuery(query);
         setAppliedSelection({ config: result.config, wildcardDims: result.wildcardDims });
-        if (targetStep === 4) fetchData(query, source, table);
+        fetchData(query, source, table);
     }
 
     function selectSource(source) {
@@ -404,6 +418,7 @@ function FHIQueryBuilder() {
         setNotice(null);
         openSeq.current++;
         dataSeq.current++;
+        setDataLoading(false);
         tablesSourceId.current = source.id;
         fetchTables(source.id);
         setStep(2);
@@ -538,11 +553,13 @@ function FHIQueryBuilder() {
     // Steg 3 «Vis data»: bygg spørringen fra utvalget og hent dataene på nytt.
     function buildFinalQuery() {
         const query = buildQuery(dimensions, queryConfig, responseFormat, maxRowCount);
+        const unchanged = finalQuery && JSON.stringify(query) === JSON.stringify(finalQuery) && (previewData || dataLoading);
         setFinalQuery(query);
         setAppliedSelection({ config: queryConfig, wildcardDims: wildcardDims });
-        setPreviewData(null);
         setNotice(null);
         setStep(4);
+        if (unchanged) return;
+        setPreviewData(null);
         fetchData(query, selectedSource, selectedTable);
     }
 
@@ -569,6 +586,7 @@ function FHIQueryBuilder() {
         setError(null);
         setAppliedSelection(null);
         setLoading(false);
+        setDataLoading(false);
         setStep(1);
         setSelectedSource(null);
         setSelectedTable(null);
@@ -614,6 +632,10 @@ function FHIQueryBuilder() {
     const boundGetTableLabel = (table) => isTableMapped(tableLabels, table)
         ? getTableLabel(tableLabels, table)
         : fallbackTableLabel(table, fallbackLabels);
+    const getGeoLevels = (table, sourceId) => {
+        const levels = table && tableGeoLevels[(sourceId || table.sourceId) + '/' + table.tableId];
+        return Array.isArray(levels) ? levels : null;
+    };
     const isUnmapped = (table) => labelsLoaded && !isTableMapped(tableLabels, table);
     const boundGetTableCategory = (table) => getTableCategory(tableLabels, table);
     const boundGeneratePowerQueryCode = () => generatePowerQueryCode(
@@ -629,7 +651,7 @@ function FHIQueryBuilder() {
 
     // Alt stegkomponentene trenger, samlet ett sted.
     const ctx = {
-        API_BASE, step, setStep, loading, error,
+        API_BASE, step, setStep, loading, dataLoading, error,
         sources, allTables, tables, selectedSource, selectedTable, highlightedTable,
         dimensions, queryConfig, finalQuery, previewData, responseFormat, maxRowCount,
         globalSearch, tableSearch, outputFormat, geoSearch, expandedCounties, expandedMunicipalities,
@@ -643,7 +665,7 @@ function FHIQueryBuilder() {
         setExpandedCategories, setResponseFormat: changeResponseFormat, setMaxRowCount, setPublisherFilter, setTableSort,
         setValueSearch, setWildcardDims, setWildcardDrafts, setShowAdvanced,
         setDataView, updateChartState, setTableMode, setPivotCol, setNotice,
-        getTableLabel: boundGetTableLabel, getTableCategory: boundGetTableCategory, isUnmapped,
+        getTableLabel: boundGetTableLabel, getTableCategory: boundGetTableCategory, isUnmapped, getGeoLevels,
         generatePowerQueryCode: boundGeneratePowerQueryCode, getGeographyGroups, findMetricDimension
     };
 
@@ -674,12 +696,12 @@ function FHIQueryBuilder() {
         },
         {
             num: 4, title: 'Data',
-            summary: step === 4 && loading ? 'Henter data …' : (finalQuery ? VIEW_LABELS[dataView] : 'Figur, tabell og spørring'),
+            summary: step === 4 && dataLoading ? 'Henter data …' : (finalQuery ? VIEW_LABELS[dataView] : 'Figur, tabell og spørring'),
             available: Boolean(finalQuery),
             onSelect: function() {
                 if (!finalQuery) return;
                 setStep(4);
-                if (!previewData && !loading) fetchPreview();
+                if (!previewData && !dataLoading) fetchPreview();
             }
         }
     ];
@@ -690,7 +712,7 @@ function FHIQueryBuilder() {
     if (step === 1) {
         main = renderSourceStep(ctx);
         actions = renderSourceActions(ctx);
-        tip = 'Vet du hva tabellen heter? Søk på tvers av alle kilder og gå rett til dataene.';
+        tip = 'Vet du hva tabellen heter? Søk på tvers av alle kilder og hopp rett til utvalget.';
     } else if (step === 2) {
         main = renderTableStep(ctx);
         actions = renderTableActions(ctx);

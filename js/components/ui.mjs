@@ -1,4 +1,6 @@
 // Basiskomponenter for designspråk A. Rene presentasjonsfunksjoner uten egen state.
+import { GEO_LEVEL_NAMES } from '../lib/geo.mjs';
+
 const h = React.createElement;
 
 function cx() {
@@ -172,4 +174,14 @@ export function Alert(props) {
 
 export function Status(props) {
     return h('p', { className: 'status-text', role: 'status', 'aria-live': 'polite' }, props.children);
+}
+
+// Geografiske nivåer som korte merker (N F K B LKS R), med fullt navn som verktøytips.
+export function GeoLevels(props) {
+    const levels = props.levels || [];
+    if (!levels.length) return null;
+    const names = levels.map(function(l) { return GEO_LEVEL_NAMES[l] || l; });
+    return h('span', { className: cx('geo-tags', props.className), title: 'Geografi: ' + names.join(', '), 'aria-label': 'Geografi: ' + names.join(', ') },
+        levels.map(function(l) { return h('span', { key: l, className: 'geo-tag', 'aria-hidden': 'true' }, l); })
+    );
 }

@@ -1,4 +1,5 @@
-import { Badge, Segment, StepHeading, SearchField, Alert, Status, Icon, Button } from './ui.mjs';
+import { Badge, Segment, StepHeading, SearchField, Alert, Status, Icon, Button, GeoLevels } from './ui.mjs';
+import { GEO_LEVEL_NAMES } from '../lib/geo.mjs';
 import { formatDateShort, formatDateLong } from '../lib/format.mjs';
 
 const h = React.createElement;
@@ -30,6 +31,7 @@ function tableRow(ctx, table, indent) {
         },
             h('span', { className: 'table-row-title' }, ctx.getTableLabel(table)),
             ctx.isUnmapped(table) && h('span', { className: 'new-tag', title: 'Mangler i label-filen' }, 'Ny'),
+            h(GeoLevels, { levels: ctx.getGeoLevels(table, ctx.selectedSource && ctx.selectedSource.id) }),
             table.modifiedAt && h('span', { className: 'row-date' }, formatDateShort(table.modifiedAt)),
             h(Badge, { selected: selected }, table.tableId)
         )
@@ -98,6 +100,8 @@ function renderDetail(ctx) {
     const key = source.id + '/' + table.tableId;
     const dims = ctx.tablePreviewDims[key];
     const label = ctx.getTableLabel(table);
+    // Nivåene fra tabellens egne dimensjoner når de er hentet, ellers fra table_geo_levels.json.
+    const geoLevels = dims && dims.status === 'ok' ? dims.geoLevels : ctx.getGeoLevels(table, source.id);
     // API-tittelen er av og til bare et internt navn (f.eks. «D14a_demens»); vis den bare når den er lesbar tekst.
     const summary = table.title && table.title !== label && /\s/.test(table.title.trim()) ? table.title : null;
 
@@ -126,6 +130,13 @@ function renderDetail(ctx) {
                             })
                         )
             ),
+            geoLevels && h('div', { className: 'detail-updated detail-geo' },
+                h('span', null, 'Geografi'),
+                geoLevels.length
+                    ? h('span', { className: 'detail-geo-levels' }, h(GeoLevels, { levels: geoLevels }),
+                        geoLevels.map(function(l) { return GEO_LEVEL_NAMES[l]; }).join(', '))
+                    : h('span', null, 'Ingen geografisk inndeling')
+            ),
             table.modifiedAt && h('div', { className: 'detail-updated' },
                 h('span', null, 'Sist oppdatert'),
                 h('span', null, formatDateLong(table.modifiedAt))
@@ -151,7 +162,7 @@ export function renderTableStep(ctx) {
             h(StepHeading, {
                 eyebrow: '02 · TABELL',
                 title: source ? (source.title || source.name) : 'Tabell',
-                subtitle: 'Velg tabellen du vil se data fra'
+                subtitle: 'Velg tabellen du vil se data fra. N F K B LKS viser geografisk inndeling.'
             }),
             h('div', { className: 'toolbar' },
                 h(SearchField, {
@@ -184,6 +195,6 @@ export function renderTableActions(ctx) {
     const t = ctx.highlightedTable;
     return t
         ? h(Button, { variant: 'primary', size: 'lg', block: true, onClick: function() { ctx.selectTable(t); }, trailingIcon: Icon.arrowRight() },
-            'Vis data fra tabell ' + t.tableId)
+            'Velg tabell ' + t.tableId)
         : h(Button, { variant: 'primary', size: 'lg', block: true, disabled: true }, 'Velg en tabell for å fortsette');
 }

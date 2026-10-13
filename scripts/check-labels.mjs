@@ -24,12 +24,14 @@ for (const source of sources) {
 
 const rows = parseTableLabelRows(readFileSync(new URL('../fhi_table_label_mapping.csv', import.meta.url), 'utf8'));
 const result = compareLabels(rows, apiTables);
-const changed = result.missing.length > 0 || result.obsolete.length > 0;
+const geoLevels = JSON.parse(readFileSync(new URL('../table_geo_levels.json', import.meta.url), 'utf8'));
+const missingGeo = apiTables.filter(function(t) { return !(t.sourceId + '/' + t.tableId in geoLevels); });
+const changed = result.missing.length > 0 || result.obsolete.length > 0 || missingGeo.length > 0;
 
 console.error(sources.length + ' kilder, ' + apiTables.length + ' tabeller i API-et, ' + rows.length + ' rader i label-filen. ' +
-    'Mangler: ' + result.missing.length + ', utgått: ' + result.obsolete.length + '.');
+    'Mangler: ' + result.missing.length + ', utgått: ' + result.obsolete.length + ', uten geografiske nivåer: ' + missingGeo.length + '.');
 
-const report = changed ? formatReport(result, new Date().toISOString().slice(0, 10)) : '';
+const report = changed ? formatReport(result, new Date().toISOString().slice(0, 10), missingGeo) : '';
 const out = process.argv[2];
 if (out) writeFileSync(out, report);
 else if (report) console.log(report);

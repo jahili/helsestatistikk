@@ -31,7 +31,8 @@ FHI API Query Builder er et visuelt verktøy som lar deg utforske og hente data 
 
 3. **Velg tabell** - Når du har valgt en kilde, velger du hvilken tabell du ønsker
    - Du kan søke i tabellene for å finne det du trenger
-   - Appen henter dataene med en gang, med et standardutvalg: de siste ti årene, hele landet og fylkene, og totalverdier for store dimensjoner
+   - Listen viser hvilke geografiske nivåer tabellen har: N (hele landet), F (fylker), K (kommuner), B (bydeler), LKS (levekårssoner) og R (helseregioner)
+   - Når du velger tabellen, kommer du til utvalget med et standardutvalg: de siste ti årene, hele landet og fylkene, og totalverdier for store dimensjoner. Dataene hentes i bakgrunnen, så «Vis data» går raskt
 
 4. **Se dataene** - I steg 4 velger du visning:
    - **Figur**: linjediagram når tiden varierer, ellers liggende søyler. Dimensjoner som ikke får plass, låses til én verdi i nedtrekksmenyer, eller deles opp i små separate diagrammer med felles akse. Søylediagram langs geografi kan vise fylker, kommuner, bydeler eller levekårssoner. Figuren lastes ned som PNG eller SVG
@@ -124,6 +125,8 @@ Push til `main` publiserer på GitHub Pages. Før opplasting kjører workflowen 
 - Workflowen «Sjekk tabell-labels mot FHI-API-et» kjører hver mandag og oppretter en issue med tabeller som mangler i filen eller ikke finnes lenger. Issuen lukkes automatisk når filen er i synk.
 - Sjekken kan også kjøres lokalt: `node scripts/check-labels.mjs`
 - Tabeller som mangler i filen vises i appen under «Nye tabeller», med navn fra FHIs metadata-beskrivelse når API-tittelen bare er et internt navn.
+
+`table_geo_levels.json` sier hvilke geografiske nivåer hver tabell har, så tabelloversikten kan vise dem uten å hente dimensjonene til alle tabellene. Kildene koder geografi ulikt (`GEO`, `FYLKE`, `BOSTED` m.fl.), og nivået tolkes fra kodeformat og navn (`geoLevelsOfDimensions` i `js/lib/geo.mjs`). Den ukentlige sjekken melder fra om tabeller som mangler i filen; oppdater den med `node scripts/update-geo-levels.mjs` (tar et par minutter fordi API-et begrenser antall kall). Detaljpanelet for valgt tabell regner nivåene ut fra tabellens egne dimensjoner.
 
 ### Kjøre tester
 
