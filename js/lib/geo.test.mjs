@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getGeographyGroups, geoLevelsOfDimensions, isGeographyDimension } from './geo.mjs';
+import { getGeographyGroups, geoLevelsOfDimensions, isGeographyDimension, geoKey, isExpiredGeoLabel } from './geo.mjs';
 
 function makeGeoDimension() {
     return {
@@ -78,4 +78,28 @@ test('geoLevelsOfDimensions tåler tekst etter koden og manglende ledende null',
     assert.deepEqual(geoLevelsOfDimensions([sted]), ['N', 'F', 'K']);
     const kommune = { code: 'KOMMUNE', label: 'Bokommune', categories: tree([['301', 'Oslo'], ['4601', 'Bergen']]) };
     assert.deepEqual(geoLevelsOfDimensions([kommune]), ['K']);
+});
+
+test('getGeographyGroups grupperer KPR-koder med navn og gyldighetsperiode, og koder uten ledende null', () => {
+    const codes = ['Landet', '01 Østfold (2008-2019)', '0101 Halden (2008-2019)', '16 Sør-Trøndelag (2008-2017)', '1621 Ørland (2008-2017)', '31 Østfold', '3101 Halden'];
+    const kpr = getGeographyGroups({ code: 'Sted', label: 'Geografi (landet, fylker, kommuner)',
+        category: { index: codes, label: Object.fromEntries(codes.map(c => [c, c])) } });
+    assert.deepEqual(kpr.others.map(o => o.code), ['Landet']);
+    assert.deepEqual(kpr.hierarchy['16 Sør-Trøndelag (2008-2017)'].municipalities.map(m => m.code), ['1621 Ørland (2008-2017)']);
+    assert.deepEqual(kpr.hierarchy['01 Østfold (2008-2019)'].municipalities.map(m => m.code), ['0101 Halden (2008-2019)']);
+    assert.deepEqual(kpr.hierarchy['31 Østfold'].municipalities.map(m => m.code), ['3101 Halden']);
+    const fylke = getGeographyGroups({ code: 'KOMMUNE', label: 'Bokommune',
+        category: { index: ['3', '301'], label: { '3': 'Oslo', '301': 'Oslo kommune' } } });
+    assert.deepEqual(fylke.hierarchy['3'].municipalities.map(m => m.code), ['301']);
+    assert.equal(geoKey('0101 Halden (2008-2019)'), '0101');
+    assert.equal(geoKey('Total'), null);
+});
+
+test('utgåtte enheter gjenkjennes og fylkene sorteres med gjeldende først', () => {
+    assert.equal(isExpiredGeoLabel('01 Østfold (2008-2019)'), true);
+    assert.equal(isExpiredGeoLabel('31 Østfold (2024->)'), false);
+    assert.equal(isExpiredGeoLabel('Akershus'), false);
+    const codes = ['01 Østfold (2008-2019)', '03 Oslo (2008->)', '31 Østfold (2024->)'];
+    const g = getGeographyGroups({ code: 'Sted', label: 'Geografi', category: { index: codes, label: Object.fromEntries(codes.map(c => [c, c])) } });
+    assert.deepEqual(g.counties.map(c => c.code), ['03 Oslo (2008->)', '31 Østfold (2024->)', '01 Østfold (2008-2019)']);
 });

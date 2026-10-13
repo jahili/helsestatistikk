@@ -712,6 +712,7 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
 }
 .value-option:hover { background: var(--surface-2); }
 .value-option-label { flex: 1; min-width: 0; }
+.value-option.is-expired .value-option-label { color: var(--text-help); }
 .value-option-strong .value-option-label { font-weight: 600; }
 
 .geo-scroll { max-height: 360px; padding: 4px 0; }

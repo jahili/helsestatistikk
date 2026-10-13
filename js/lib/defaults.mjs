@@ -2,6 +2,7 @@
 // Bygger samme konfigurasjonsform som steg 3 bruker ({ filter, values, selectedCategories }).
 import { categoryCodes, isTimeDimension, expectedRows } from './selection.mjs';
 import { geoLevel } from './jsonstat.mjs';
+import { isGeographyDimension, isExpiredGeoLabel } from './geo.mjs';
 
 const RECENT_YEARS = 10;
 const FEW_YEARS = 5;
@@ -17,7 +18,7 @@ function isMetric(dim) {
 }
 
 function isGeo(dim) {
-    return dim.code === 'GEO';
+    return isGeographyDimension(dim);
 }
 
 // Øverste nivå i kategoritreet, f.eks. «Begge kjønn» eller «Alle aldre».
@@ -33,10 +34,12 @@ function summaryCodes(dim) {
     return categoryCodes(dim).slice(0, 1);
 }
 
+// Hele landet og gjeldende fylker (ikke utgåtte, som «01 Østfold (2008-2019)» i KPR).
 function geoOverview(dim) {
+    const labels = (dim.category && dim.category.label) || {};
     return categoryCodes(dim).filter(function(c) {
-        const level = geoLevel(c);
-        return level === 'land' || level === 'fylke';
+        const level = geoLevel(c, labels[c]);
+        return (level === 'land' || level === 'fylke') && !isExpiredGeoLabel(labels[c]);
     });
 }
 

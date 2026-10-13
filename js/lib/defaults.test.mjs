@@ -52,3 +52,11 @@ test('tom liste gir tomt utvalg', () => {
     assert.deepEqual(defaultSelection([]), {});
     assert.deepEqual(defaultSelection(null), {});
 });
+
+test('geografi i andre kilder (KPR): hele landet og gjeldende fylker', () => {
+    const codes = ['Landet', '01 Østfold (2008-2019)', '03 Oslo (2008->)', '31 Østfold (2024->)']
+        .concat(Array.from({ length: 40 }, (_, i) => String(3100 + i) + ' Kommune (2024->)'));
+    const cfg = defaultSelection([{ code: 'Sted', label: 'Geografi (landet, fylker, kommuner)',
+        category: { index: codes, label: Object.fromEntries(codes.map(c => [c, c === 'Landet' ? 'Hele landet' : c])) } }]);
+    assert.deepEqual(cfg.Sted.selectedCategories, ['Landet', '03 Oslo (2008->)', '31 Østfold (2024->)']);
+});

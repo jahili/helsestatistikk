@@ -1,6 +1,7 @@
 import { Button, Segment, Chip, StepHeading, SearchField, Alert, Status, Icon } from './ui.mjs';
 import { categoryCodes, selectedCount, isTimeDimension } from '../lib/selection.mjs';
 import { formatNumber } from '../lib/format.mjs';
+import { isGeographyDimension } from '../lib/geo.mjs';
 
 const h = React.createElement;
 const WIDE_THRESHOLD = 20;
@@ -41,7 +42,9 @@ function toggleCode(ctx, dimension, config, code, checked) {
 }
 
 function checkboxOption(ctx, dimension, config, item, extraClass) {
-    return h('label', { key: item.code, className: 'value-option' + (extraClass ? ' ' + extraClass : '') },
+    // Utgåtte geografiske enheter (sluttår i navnet) vises dempet.
+    const className = 'value-option' + (extraClass ? ' ' + extraClass : '') + (item.expired ? ' is-expired' : '');
+    return h('label', { key: item.code, className: className, title: item.expired ? 'Finnes ikke lenger (utgått inndeling)' : undefined },
         h('input', {
             type: 'checkbox',
             checked: config.selectedCategories.includes(item.code),
@@ -132,7 +135,7 @@ function renderGeoTree(ctx, dimension, config, geoGroups) {
             const expanded = q ? true : Boolean(ctx.expandedCounties[county.code]);
             const visibleMuns = q && !matches(county) ? muns.filter(matches) : muns;
             const allMunsAndDists = muns.map(function(m) { return m.code; }).concat(
-                geoGroups.districts.filter(function(d) { return d.code.startsWith(county.code); }).map(function(d) { return d.code; })
+                geoGroups.districts.filter(function(d) { return d.key.startsWith(county.key); }).map(function(d) { return d.code; })
             );
             const allSelected = allMunsAndDists.length > 0 && allMunsAndDists.every(function(c) { return config.selectedCategories.includes(c); });
 
@@ -193,7 +196,7 @@ function renderGeoTree(ctx, dimension, config, geoGroups) {
 
 function renderValuePicker(ctx, dimension, config) {
     const codes = categoryCodes(dimension);
-    const isGeo = dimension.code === 'GEO';
+    const isGeo = isGeographyDimension(dimension);
     const geoGroups = isGeo ? ctx.getGeographyGroups(dimension) : null;
     const searchValue = isGeo ? ctx.geoSearch : (ctx.valueSearch[dimension.code] || '');
     const setSearch = isGeo

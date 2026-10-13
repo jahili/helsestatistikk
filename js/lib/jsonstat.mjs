@@ -1,6 +1,7 @@
 // Gjør et JSON-stat2-datasett om til en «lang» tabell og velger figurtype ut fra hvilke dimensjoner som varierer.
 // Rent og uten DOM, så det kan testes med node --test.
 import { isTimeDimension } from './selection.mjs';
+import { isGeographyDimension, levelOfCategory } from './geo.mjs';
 
 const MAX_SERIES_LINE = 10;
 const MAX_SERIES_BAR = 6;
@@ -21,7 +22,7 @@ function roleOf(ds, id) {
     const has = function(r) { return Array.isArray(role[r]) && role[r].indexOf(id) !== -1; };
     if (has('metric') || id === 'MEASURE_TYPE' || id === 'ContentsCode') return 'metric';
     if (has('time') || isTimeDimension({ code: id, label: dim.label })) return 'time';
-    if (has('geo') || id === 'GEO') return 'geo';
+    if (has('geo') || isGeographyDimension({ code: id, label: dim.label })) return 'geo';
     return null;
 }
 
@@ -126,15 +127,11 @@ export const GEO_LEVELS = [
 ];
 
 // FHI sine geokoder: 0 = hele landet, 2 sifre = fylke, 4 = kommune, 6 = bydel,
-// 10 = levekårssone (SSBs LKS, kommunenummer + 6 sifre).
-export function geoLevel(code) {
-    const c = String(code);
-    if (c === '0') return 'land';
-    if (/^\d{2}$/.test(c)) return 'fylke';
-    if (/^\d{4}$/.test(c)) return 'kommune';
-    if (/^\d{6}$/.test(c)) return 'bydel';
-    if (/^\d{10}$/.test(c)) return 'lks';
-    return null;
+// 10 = levekårssone (SSBs LKS, kommunenummer + 6 sifre). Andre kilder skriver navn etter tallet
+// («0101 Halden (2008-2019)») eller hele landet som tekst («Landet»), så navnet brukes også (se levelOfCategory).
+const LEVEL_IDS = { N: 'land', F: 'fylke', K: 'kommune', B: 'bydel', LKS: 'lks' };
+export function geoLevel(code, label) {
+    return LEVEL_IDS[levelOfCategory(code, label)] || null;
 }
 
 // Nivåene som finnes i en geodimensjon, med antall. Tomt hvis det bare er ett nivå (da trengs ikke valget).
@@ -142,7 +139,7 @@ export function geoLevelsIn(dim) {
     if (!dim || dim.role !== 'geo') return [];
     const counts = {};
     dim.categories.forEach(function(c) {
-        const level = geoLevel(c.code);
+        const level = geoLevel(c.code, c.label);
         if (level) counts[level] = (counts[level] || 0) + 1;
     });
     const levels = GEO_LEVELS.filter(function(l) { return counts[l.id]; })
@@ -167,7 +164,7 @@ export function chartPoints(data, plan, filterValues, options) {
     let xCategories = plan.x.categories;
     if (level && plan.x.role === 'geo') {
         xCategories = xCategories.filter(function(c) {
-            const l = geoLevel(c.code);
+            const l = geoLevel(c.code, c.label);
             return l === level || l === 'land';
         });
     }
