@@ -47,6 +47,9 @@
     --r-card: 12px;
     --r-pill: 999px;
 
+    /* Maksbredde for innholdet; headeren følger samme kanter. */
+    --page-max: 1600px;
+
     color-scheme: light;
 }
 
@@ -401,7 +404,7 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
     justify-content: space-between;
     gap: 16px;
     min-height: 60px;
-    padding: 0 20px;
+    padding: 0 max(20px, calc((100% - var(--page-max)) / 2 + 20px));
     flex-shrink: 0;
     border-bottom: 1px solid var(--line);
     background: var(--surface);
@@ -436,7 +439,11 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
 }
 .theme-btn:hover { border-color: var(--line-input); color: var(--text); }
 
-.app-body { flex: 1; display: flex; flex-wrap: wrap; min-height: 0; }
+.app-body { flex: 1; display: flex; flex-wrap: wrap; min-height: 0; width: 100%; max-width: var(--page-max); margin: 0 auto; }
+@media (min-width: 1601px) {
+    .app-body { border-right: 1px solid var(--line); }
+    .sidebar { border-left: 1px solid var(--line); }
+}
 
 .sidebar {
     flex: 1 1 340px;
