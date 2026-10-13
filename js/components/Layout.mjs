@@ -4,13 +4,24 @@ import { StepList, StepDots } from './StepList.mjs';
 const h = React.createElement;
 
 export const LINKS = {
-    about: 'https://github.com/jahili/helsestatistikk#readme',
+    readme: 'https://github.com/jahili/helsestatistikk#readme',
     apiDocs: 'https://github.com/folkehelseinstituttet/Fhi.Statistikk.OpenAPI',
     github: 'https://github.com/jahili/helsestatistikk'
 };
 
+// Lenker ut av appen åpnes i ny fane og får en pil, så det er tydelig at de går til et annet nettsted.
 function externalLink(href, text, className) {
-    return h('a', { href: href, className: className, target: '_blank', rel: 'noopener noreferrer' }, text);
+    return h('a', { href: href, className: (className ? className + ' ' : '') + 'external-link', target: '_blank', rel: 'noopener noreferrer' },
+        text, Icon.external(12), h('span', { className: 'sr-only' }, ' (åpnes i ny fane)'));
+}
+
+// «Om verktøyet» er en side i appen (#om).
+function aboutLink(onAbout, className) {
+    return h('a', {
+        href: '#om',
+        className: className,
+        onClick: function(e) { if (onAbout) { e.preventDefault(); onAbout(); } }
+    }, 'Om verktøyet');
 }
 
 export function Header(props) {
@@ -24,7 +35,7 @@ export function Header(props) {
             )
         ),
         h('nav', { className: 'header-nav', 'aria-label': 'Lenker' },
-            externalLink(LINKS.about, 'Om verktøyet', 'header-link'),
+            aboutLink(props.onAbout, 'header-link'),
             externalLink(LINKS.apiDocs, 'API-dokumentasjon', 'header-link header-link-secondary'),
             externalLink(LINKS.github, 'GitHub', 'header-link'),
             h('button', {
@@ -48,7 +59,7 @@ export function Credits(props) {
     // På smale skjermer er header-lenkene skjult, så de vises her i stedet.
     return h('footer', { className: 'mobile-footer ' + (props.className || '') },
         h('nav', { className: 'mobile-footer-links', 'aria-label': 'Lenker' },
-            externalLink(LINKS.about, 'Om verktøyet'),
+            aboutLink(props.onAbout),
             externalLink(LINKS.apiDocs, 'API-dokumentasjon'),
             externalLink(LINKS.github, 'GitHub')
         ),

@@ -10,12 +10,13 @@ import { previewToCsv, csvFileName } from './lib/preview.mjs';
 import { defaultSelection } from './lib/defaults.mjs';
 import { encodeState, decodeState, applyUrlSelection } from './lib/urlState.mjs';
 import { Header, Sidebar, StepDots, Credits } from './components/Layout.mjs';
-import { Icon, Alert } from './components/ui.mjs';
+import { Icon, Alert, Button } from './components/ui.mjs';
 import { renderSourceStep, renderSourceActions } from './components/SourceSelection.mjs';
 import { renderTableStep, renderTableActions } from './components/TableSelection.mjs';
 import { renderVariablesStep, renderVariablesActions } from './components/DimensionConfiguration.mjs';
 import { renderDataStep, renderDataActions } from './components/DataStep.mjs';
 import { renderMetadataModal, closeMetadataModal as closeMetadataModalImpl } from './components/MetadataModal.mjs';
+import { renderAboutPage } from './components/AboutPage.mjs';
 
 const { useState, useEffect, useRef, createElement: h } = React;
 const API_BASE = 'https://statistikk-data.fhi.no/api/open/v1';
@@ -92,7 +93,10 @@ function FHIQueryBuilder() {
     const urlRequest = useRef(decodeState(window.location.hash));
     const [urlReady, setUrlReady] = useState(!urlRequest.current.sourceId);
     const [urlRevision, setUrlRevision] = useState(0);
-    const lastHash = useRef(window.location.hash.replace(/^#/, ''));
+    // «Om verktøyet» ligger på #om og skriver ikke app-valgene til URL-en mens den vises.
+    const initialHash = window.location.hash.replace(/^#/, '');
+    const [page, setPage] = useState(initialHash === 'om' ? 'om' : 'app');
+    const lastHash = useRef(initialHash === 'om' ? '' : initialHash);
     const globalSearchRef = useRef(null);
     const mainRef = useRef(null);
     const copyTimer = useRef(null);
@@ -149,7 +153,7 @@ function FHIQueryBuilder() {
         if (firstRender.current) { firstRender.current = false; return; }
         if (mainRef.current) mainRef.current.focus({ preventScroll: true });
         window.scrollTo(0, 0);
-    }, [step]);
+    }, [step, page]);
 
     // Steg 4: «Last ned som CSV» før forhåndsvisning er hentet laster ned når dataene kommer.
     useEffect(() => {
@@ -498,6 +502,8 @@ function FHIQueryBuilder() {
     useEffect(() => {
         function handleHashChange() {
             const hash = window.location.hash.replace(/^#/, '');
+            if (hash === 'om') { setPage('om'); return; }
+            setPage('app');
             if (hash === lastHash.current) return;
             lastHash.current = hash;
             urlRequest.current = decodeState(hash);
@@ -506,12 +512,16 @@ function FHIQueryBuilder() {
             setUrlRevision(function(n) { return n + 1; });
         }
         window.addEventListener('hashchange', handleHashChange);
-        return function() { window.removeEventListener('hashchange', handleHashChange); };
+        window.addEventListener('popstate', handleHashChange);
+        return function() {
+            window.removeEventListener('hashchange', handleHashChange);
+            window.removeEventListener('popstate', handleHashChange);
+        };
     });
 
     // Skriv valgene til URL-en. Steg 4 bruker utvalget som ga dataene, steg 3 utvalget under arbeid.
     useEffect(() => {
-        if (!urlReady) return;
+        if (!urlReady || page === 'om') return;
         let hash = '';
         if (step >= 2 && selectedSource) {
             const onTable = step >= 3 && selectedTable;
@@ -533,8 +543,20 @@ function FHIQueryBuilder() {
         lastHash.current = hash;
         const url = window.location.pathname + window.location.search + (hash ? '#' + hash : '');
         window.history.replaceState(null, '', url);
-    }, [urlReady, step, selectedSource, selectedTable, dimensions, queryConfig, wildcardDims, appliedSelection,
+    }, [urlReady, page, step, selectedSource, selectedTable, dimensions, queryConfig, wildcardDims, appliedSelection,
         dataView, responseFormat, maxRowCount, chartState]);
+
+    function openAbout() {
+        if (page === 'om') return;
+        window.history.pushState(null, '', window.location.pathname + window.location.search + '#om');
+        setPage('om');
+    }
+
+    function closeAbout() {
+        const hash = lastHash.current;
+        window.history.pushState(null, '', window.location.pathname + window.location.search + (hash ? '#' + hash : ''));
+        setPage('app');
+    }
 
     function updateDimensionConfig(dimCode, updates) {
         setQueryConfig(function(prev) {
@@ -665,6 +687,7 @@ function FHIQueryBuilder() {
         setExpandedCategories, setResponseFormat: changeResponseFormat, setMaxRowCount, setPublisherFilter, setTableSort,
         setValueSearch, setWildcardDims, setWildcardDrafts, setShowAdvanced,
         setDataView, updateChartState, setTableMode, setPivotCol, setNotice,
+        closeAbout,
         getTableLabel: boundGetTableLabel, getTableCategory: boundGetTableCategory, isUnmapped, getGeoLevels,
         generatePowerQueryCode: boundGeneratePowerQueryCode, getGeographyGroups, findMetricDimension
     };
@@ -716,7 +739,15 @@ function FHIQueryBuilder() {
     let main = null;
     let actions = null;
     let tip = null;
-    if (step === 1) {
+    if (page === 'om') {
+        main = renderAboutPage(ctx);
+        actions = h(Button, { variant: 'primary', size: 'lg', block: true, onClick: closeAbout }, 'Tilbake til verktøyet');
+        // Et klikk i steglisten lukker også siden.
+        stepItems.forEach(function(item) {
+            const select = item.onSelect;
+            item.onSelect = function() { closeAbout(); select(); };
+        });
+    } else if (step === 1) {
         main = renderSourceStep(ctx);
         actions = renderSourceActions(ctx);
         tip = 'Vet du hva tabellen heter? Søk på tvers av alle kilder og hopp rett til utvalget.';
@@ -734,14 +765,14 @@ function FHIQueryBuilder() {
     return h('div', { className: 'app' },
         h('a', { href: '#main-content', className: 'skip-link' }, 'Gå til hovedinnhold'),
         renderMetadataModal(showMetadataModal, tableMetadata, closeMetadataModal),
-        h(Header, { theme: effectiveTheme, onToggleTheme: toggleTheme }),
+        h(Header, { theme: effectiveTheme, onToggleTheme: toggleTheme, onAbout: openAbout }),
         h('div', { className: 'app-body' },
             h(Sidebar, { step: step, items: stepItems, tip: tip, actions: actions }),
-            h('main', { id: 'main-content', ref: mainRef, tabIndex: -1, className: 'content content-step' + step, 'aria-label': 'Hovedinnhold' },
+            h('main', { id: 'main-content', ref: mainRef, tabIndex: -1, className: 'content ' + (page === 'om' ? 'content-about' : 'content-step' + step), 'aria-label': 'Hovedinnhold' },
                 h(StepDots, { step: step, items: stepItems }),
-                step !== 4 && notice && h(Alert, { tone: 'warning' }, notice),
+                page === 'app' && step !== 4 && notice && h(Alert, { tone: 'warning' }, notice),
                 main,
-                h(Credits, { className: 'mobile-only', showLinks: true })
+                h(Credits, { className: 'mobile-only', showLinks: true, onAbout: openAbout })
             )
         ),
         h('div', { className: 'toast', role: 'status', 'aria-live': 'polite' },

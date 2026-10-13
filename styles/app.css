@@ -421,6 +421,7 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
     white-space: nowrap;
 }
 .header-link:hover { background: var(--fill); color: var(--text); }
+.external-link svg { display: inline-block; margin-left: 3px; vertical-align: -1px; opacity: 0.7; }
 .theme-btn {
     display: flex;
     align-items: center;
@@ -924,6 +925,23 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
     white-space: nowrap;
 }
 .endpoint-link { font-family: var(--font-mono); font-size: 12px; }
+
+/* ---------- Om verktøyet ---------- */
+.about-page { display: flex; flex-direction: column; gap: 28px; max-width: 820px; }
+.about-lead { font-size: 17px; line-height: 1.55; color: var(--text); }
+.about-section { display: flex; flex-direction: column; gap: 10px; }
+.about-title { font-size: 19px; font-weight: 600; color: var(--text); }
+.about-text { line-height: 1.6; color: var(--text-muted); }
+.about-steps, .about-list { display: flex; flex-direction: column; gap: 10px; padding-left: 22px; line-height: 1.6; color: var(--text-muted); }
+.about-steps strong { color: var(--text); }
+.about-steps .geo-tags { vertical-align: 1px; }
+.about-sources { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.about-source { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); }
+.about-source-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.about-source-title { font-size: 15px; font-weight: 600; color: var(--text); }
+.about-source-count { flex-shrink: 0; font-size: 12px; color: var(--text-help); }
+.about-source-text { font-size: 13px; line-height: 1.5; color: var(--text-muted); }
+.about-source-meta { margin-top: auto; font-size: 12px; color: var(--text-help); }
 
 /* ---------- Steg 4: Data ---------- */
 .selection-bar {

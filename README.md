@@ -98,7 +98,7 @@ Alt kjører i nettleseren din - ingen backend-server er nødvendig.
 - `index.html` — HTML-skall, laster `js/app.js` som ES-modul
 - `js/app.js` — hovedkomponent: state, effekter og sammensetning av skjermbildene
 - `js/lib/` — ren logikk (CSV-parsing, tabell-label-oppslag, geografi-gruppering, spørringsbygging, Power Query- og cURL-generering, forhåndsvisning/CSV-eksport, JSON-stat til lang tabell og figurvalg, standardutvalg, valg i URL-en, pivottabell, radtelling, formatering, sikker HTML-rendering, syntax-highlighting) — hver fil har en tilhørende `*.test.mjs`
-- `js/components/` — `ui.mjs` (basiskomponenter: Button, Segment, Chip, Badge, Card m.fl.), `StepList.mjs`, `Layout.mjs` (header og sidekolonne) ett skjermbilde per steg (`DataStep.mjs` er steg 4 med fanene), `Chart.mjs` (figur), `TableView.mjs` (pivot og liste) og `QueryResult.mjs` (fanen «API og Power BI»)
+- `js/components/` — `ui.mjs` (basiskomponenter: Button, Segment, Chip, Badge, Card m.fl.), `StepList.mjs`, `Layout.mjs` (header og sidekolonne) ett skjermbilde per steg (`DataStep.mjs` er steg 4 med fanene), `Chart.mjs` (figur), `TableView.mjs` (pivot og liste) `QueryResult.mjs` (fanen «API og Power BI») og `AboutPage.mjs` (siden «Om verktøyet», `#om`)
 - `styles/app.css` — tokens, komponenter, layout, responsivt og mørkt tema (designspråk A, se `design/fhi-redesign.md`)
 
 ### Kjøre lokalt
