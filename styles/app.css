@@ -692,6 +692,7 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
 
 .picker-toolbar { display: flex; gap: 8px; align-items: center; }
 .picker-toolbar .search-field { flex: 1; min-width: 0; }
+.picker-buttons { display: flex; gap: 6px; flex-shrink: 0; }
 
 .value-scroll {
     max-height: 264px;

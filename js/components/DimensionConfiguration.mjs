@@ -232,12 +232,19 @@ function renderValuePicker(ctx, dimension, config) {
                 value: searchValue,
                 onChange: setSearch
             }),
-            h(Button, {
-                size: 'sm',
-                onClick: function() {
-                    ctx.updateDimensionConfig(dimension.code, { selectedCategories: allSelected ? [] : codes });
-                }
-            }, allSelected ? 'Fjern alle' : 'Velg alle')
+            // Standardutvalget velger ofte bare noen verdier (f.eks. fylkene eller de siste årene), så begge knappene trengs.
+            h('div', { className: 'picker-buttons' },
+                h(Button, {
+                    size: 'sm',
+                    disabled: allSelected,
+                    onClick: function() { ctx.updateDimensionConfig(dimension.code, { selectedCategories: codes }); }
+                }, 'Velg alle'),
+                h(Button, {
+                    size: 'sm',
+                    disabled: selected.length === 0,
+                    onClick: function() { ctx.updateDimensionConfig(dimension.code, { selectedCategories: [] }); }
+                }, 'Fjern alle')
+            )
         ),
         isGeo && geoGroups && geoGroups.hierarchy && geoGroups.counties.length > 0
             ? h('div', { className: 'value-scroll geo-scroll' }, renderGeoTree(ctx, dimension, config, geoGroups))
@@ -422,7 +429,7 @@ export function renderVariablesActions(ctx) {
         h('div', { className: 'desktop-only' }, renderQuerySettings(ctx, 'd')),
         h(Button, {
             variant: 'primary', size: 'lg', block: true,
-            disabled: ctx.loading || ctx.dimensions.length === 0,
+            disabled: ctx.loading || ctx.dimensions.length === 0 || ctx.rows.total === 0,
             onClick: ctx.buildFinalQuery,
             trailingIcon: Icon.arrowRight()
         }, 'Vis data')
