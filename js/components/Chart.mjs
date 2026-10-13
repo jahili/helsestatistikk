@@ -94,14 +94,22 @@ function buildPlot(Plot, plan, result, width, flags, opts) {
     const longest = result.xDomain.reduce(function(m, d) { return Math.max(m, estimateTextWidth(d)); }, 0);
     const marginLeft = Math.min(opts.compact ? 140 : 240, Math.max(60, Math.ceil(longest) + 16));
     const perCategory = plan.series ? result.seriesDomain.length * (opts.compact ? 10 : 14) + 10 : (opts.compact ? 20 : 26);
-    const marks = [Plot.ruleX([0])];
-    if (plan.series) {
-        marks.unshift(Plot.barX(points, { x: 'value', y: 'series', fy: 'x', fill: 'series' }));
-        if (!opts.forExport) marks.push(Plot.tip(points, Plot.pointerY({ x: 'value', y: 'series', fy: 'x', title: tipTitle })));
-    } else {
-        marks.unshift(Plot.barX(points, { x: 'value', y: 'x', fill: color }));
-        if (!opts.forExport) marks.push(Plot.tip(points, Plot.pointerY({ x: 'value', y: 'x', title: tipTitle })));
-    }
+    // Prikkede og manglende verdier får ingen søyle, men FHI sitt symbol (f.eks. «:») ved nullstreken,
+    // så de ikke kan forveksles med 0 eller tegnes som søyler.
+    const defined = points.filter(function(p) { return p.value != null; });
+    const missing = points.filter(function(p) { return p.value == null; });
+    const position = plan.series ? { y: 'series', fy: 'x' } : { y: 'x' };
+    const atValue = function(p) { return p.value == null ? 0 : p.value; };
+    const marks = [
+        Plot.barX(defined, Object.assign({ x: 'value', fill: plan.series ? 'series' : color }, position)),
+        Plot.ruleX([0]),
+        Plot.text(missing, Object.assign({
+            x: function() { return 0; },
+            text: function(p) { return p.flag || '–'; },
+            textAnchor: 'start', dx: 4, fill: 'currentColor', fillOpacity: 0.7, fontSize: 11
+        }, position))
+    ];
+    if (!opts.forExport) marks.push(Plot.tip(points, Plot.pointerY(Object.assign({ x: atValue, title: tipTitle }, position))));
     const options = Object.assign(common, {
         height: result.xDomain.length * perCategory + 50,
         marginLeft: marginLeft,
@@ -317,7 +325,7 @@ export function ChartView(props) {
     };
 
     const missingFlags = Array.from(new Set(allPoints.filter(function(p) { return p.value == null && p.flag; })
-        .map(function(p) { return data.flags[p.flag] || p.flag; })));
+        .map(function(p) { return data.flags[p.flag] ? p.flag + ' ' + data.flags[p.flag].toLowerCase() : p.flag; })));
     const setFilter = function(dimId, value) {
         props.onChartState({ filters: Object.assign({}, filterValues, { [dimId]: value }) });
     };
@@ -374,7 +382,7 @@ export function ChartView(props) {
         h('div', { ref: containerRef, className: 'chart-canvas', role: 'figure', 'aria-label': props.title }),
         missing > 0 && h('p', { className: 'help-text' },
             missing + ' verdi' + (missing === 1 ? '' : 'er') + ' mangler i figuren' +
-            (missingFlags.length ? ' (' + missingFlags.join(', ').toLowerCase() + ')' : '') + '.'),
+            (missingFlags.length ? ' (' + missingFlags.join(', ') + ')' : '') + '.'),
         truncated && h('p', { className: 'help-text' },
             'Figuren viser de første ' + truncated.shown + ' av ' + truncated.total + ' kategoriene. Velg færre verdier i steg 03 for å se resten, eller bruk tabellvisningen.'),
         h('div', { className: 'chart-actions' },
