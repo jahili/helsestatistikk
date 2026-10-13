@@ -106,6 +106,7 @@ function renderDetail(ctx) {
     const summary = table.title && table.title !== label && /\s/.test(table.title.trim()) ? table.title : null;
 
     return h(React.Fragment, null,
+        renderAboutTable(ctx, source, table),
         h('section', { className: 'card detail-card', 'aria-labelledby': 'detail-title', 'aria-live': 'polite' },
             h('div', { className: 'detail-head' },
                 h('span', { className: 'detail-path' }, source.id + ' / Table / ' + table.tableId),
@@ -142,13 +143,26 @@ function renderDetail(ctx) {
                 h('span', null, formatDateLong(table.modifiedAt))
             )
         ),
-        h('div', { className: 'detail-links' },
+    );
+}
+
+// Boksen «Om tabellen» over dimensjonene: kort beskrivelse fra FHI og knapp til hele beskrivelsen.
+function renderAboutTable(ctx, source, table) {
+    const summary = ctx.tableSummaries[source.id + '/' + table.tableId];
+    return h('section', { className: 'card detail-about', 'aria-labelledby': 'detail-about-title' },
+        h('h2', { id: 'detail-about-title', className: 'detail-about-title' }, Icon.info(16), 'Om tabellen'),
+        !summary || summary.status === 'loading'
+            ? h(Status, null, 'Henter beskrivelse …')
+            : summary.status === 'ok' && summary.text
+                ? h('p', { className: 'detail-about-text' }, summary.text)
+                : h('p', { className: 'help-text' }, 'Fant ingen kort beskrivelse. Se hele beskrivelsen fra FHI.'),
+        h('div', { className: 'detail-about-actions' },
             h(Button, {
-                variant: 'link',
+                size: 'sm',
                 onClick: function() { ctx.fetchMetadata(source.id, table.tableId, { openModal: true }); }
-            }, 'Om tabellen'),
-            source.aboutUrl && h('a', { href: source.aboutUrl, target: '_blank', rel: 'noopener noreferrer', className: 'detail-link' },
-                'Les mer om ' + (source.title || source.name) + ' hos FHI ↗')
+            }, 'Les hele beskrivelsen'),
+            source.aboutUrl && h('a', { href: source.aboutUrl, target: '_blank', rel: 'noopener noreferrer', className: 'detail-link external-link' },
+                'Om ' + (source.title || source.name) + ' hos FHI', Icon.external(12), h('span', { className: 'sr-only' }, ' (åpnes i ny fane)'))
         )
     );
 }

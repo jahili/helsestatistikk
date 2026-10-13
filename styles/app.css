@@ -666,7 +666,18 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
     font-size: 13px;
 }
 .detail-updated span:first-child { color: var(--text-help); }
-.detail-links { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.detail-about {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 20px;
+    border-color: var(--accent-ring);
+    background: var(--accent-surface);
+}
+.detail-about-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--text); }
+.detail-about-title svg { color: var(--accent); }
+.detail-about-text { font-size: 14px; line-height: 1.5; color: var(--text); }
+.detail-about-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
 .detail-link { font-size: 13px; font-weight: 500; }
 
 /* ---------- Steg 3 – Variabler ---------- */

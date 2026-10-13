@@ -73,6 +73,7 @@ function FHIQueryBuilder() {
     const [tableSort, setTableSort] = useState('theme');
     const [highlightedTable, setHighlightedTable] = useState(null);
     const [tablePreviewDims, setTablePreviewDims] = useState({});
+    const [tableSummaries, setTableSummaries] = useState({});
     const [fallbackLabels, setFallbackLabels] = useState({});
     const requestedFallbacks = useRef({});
     const [valueSearch, setValueSearch] = useState({});
@@ -441,8 +442,24 @@ function FHIQueryBuilder() {
     useEffect(() => {
         if (step === 2 && selectedSource && highlightedTable) {
             fetchTablePreviewDims(selectedSource.id, highlightedTable.tableId);
+            fetchTableSummary(selectedSource.id, highlightedTable.tableId);
         }
     }, [step, selectedSource, highlightedTable]);
+
+    // Steg 2: første setning av FHIs beskrivelse, til boksen «Om tabellen» over dimensjonene.
+    async function fetchTableSummary(sourceId, tableId) {
+        const key = sourceId + '/' + tableId;
+        if (tableSummaries[key] && tableSummaries[key].status !== 'error') return;
+        setTableSummaries(function(prev) { return Object.assign({}, prev, { [key]: { status: 'loading' } }); });
+        try {
+            const response = await fetch(API_BASE + '/' + sourceId + '/Table/' + tableId + '/metadata');
+            if (!response.ok) throw new Error('Kunne ikke hente beskrivelsen');
+            const text = firstSentenceFromMetadata(await response.json());
+            setTableSummaries(function(prev) { return Object.assign({}, prev, { [key]: { status: 'ok', text: text } }); });
+        } catch (err) {
+            setTableSummaries(function(prev) { return Object.assign({}, prev, { [key]: { status: 'error' } }); });
+        }
+    }
 
     // Tabeller som mangler i label-filen og bare har et internt navn i API-et
     // (f.eks. «INNVAND_INNVKAT»), får navn fra første setning i metadata-beskrivelsen.
@@ -686,7 +703,7 @@ function FHIQueryBuilder() {
         dimensions, queryConfig, finalQuery, previewData, responseFormat, maxRowCount,
         globalSearch, tableSearch, outputFormat, geoSearch, expandedCounties, expandedMunicipalities,
         expandedCategories, firstSentence, geoMappingUrl, copiedKey, publisherFilter, tableSort,
-        tablePreviewDims, valueSearch, wildcardDims, wildcardDrafts, showAdvanced, pendingCsv, rows, filteredCount, effectiveTheme,
+        tablePreviewDims, tableSummaries, valueSearch, wildcardDims, wildcardDrafts, showAdvanced, pendingCsv, rows, filteredCount, effectiveTheme,
         dataView, chartState, tableMode, pivotCol, appliedSelection, selectionChanged, notice, dataFileBase,
         globalSearchRef,
         selectSource, selectSourceAndTable, selectTable, highlightTable, updateDimensionConfig, resetAllDimensions,
