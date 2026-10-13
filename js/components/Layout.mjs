@@ -27,7 +27,17 @@ function aboutLink(onAbout, className) {
 export function Header(props) {
     const isDark = props.theme === 'dark';
     return h('header', { className: 'app-header' },
-        h('div', { className: 'brand' },
+        // Logo og navn går til startsiden (steg 1, uten valg).
+        h('a', {
+            className: 'brand',
+            href: window.location.pathname,
+            'aria-label': 'Helsestatistikk – til startsiden',
+            onClick: function(e) {
+                if (!props.onHome || e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
+                e.preventDefault();
+                props.onHome();
+            }
+        },
             h(Logo),
             h('div', { className: 'brand-text' },
                 h('span', { className: 'brand-title' }, 'Helsestatistikk'),

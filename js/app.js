@@ -546,6 +546,14 @@ function FHIQueryBuilder() {
     }, [urlReady, page, step, selectedSource, selectedTable, dimensions, queryConfig, wildcardDims, appliedSelection,
         dataView, responseFormat, maxRowCount, chartState]);
 
+    // Logoen i headeren: tilbake til steg 1 uten valg, også fra «Om verktøyet».
+    function goHome() {
+        if (window.location.hash) window.history.pushState(null, '', window.location.pathname + window.location.search);
+        lastHash.current = '';
+        setPage('app');
+        startOver();
+    }
+
     function openAbout() {
         if (page === 'om') return;
         window.history.pushState(null, '', window.location.pathname + window.location.search + '#om');
@@ -765,7 +773,7 @@ function FHIQueryBuilder() {
     return h('div', { className: 'app' },
         h('a', { href: '#main-content', className: 'skip-link' }, 'Gå til hovedinnhold'),
         renderMetadataModal(showMetadataModal, tableMetadata, closeMetadataModal),
-        h(Header, { theme: effectiveTheme, onToggleTheme: toggleTheme, onAbout: openAbout }),
+        h(Header, { theme: effectiveTheme, onToggleTheme: toggleTheme, onAbout: openAbout, onHome: goHome }),
         h('div', { className: 'app-body' },
             h(Sidebar, { step: step, items: stepItems, tip: tip, actions: actions }),
             h('main', { id: 'main-content', ref: mainRef, tabIndex: -1, className: 'content ' + (page === 'om' ? 'content-about' : 'content-step' + step), 'aria-label': 'Hovedinnhold' },
