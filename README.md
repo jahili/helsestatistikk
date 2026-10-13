@@ -41,9 +41,12 @@ Helsestatistikk er et visuelt verktøy som lar deg utforske og hente data fra [F
    - «Last ned som CSV» gir alle dataene i utvalget, og «Kopier lenke til visningen» gir en lenke som åpner samme tabell, utvalg og visning
 
 5. **Endre utvalg** - I steg 3 velger du hvilke verdier dataene skal vise, og trykker «Vis data»
-   - **Filtertype**: Velg spesifikke verdier, alle verdier, mønster (wildcard), eller for tidsvariabler et antall år
+   - **Filtertype**: Velg spesifikke verdier, alle verdier, mønster (wildcard), eller for tidsvariabler de siste X årene
    - **Geografi**: Velg fylker, kommuner, bydeler eller levekårssoner i et tre med søk
-   - Klikk på «Om tabellen» for detaljer om hva tabellen inneholder
+   - «Velg alle» og «Fjern alle» gjelder hele dimensjonen, og «Tilbake til standard» gjenoppretter standardutvalget
+   - Boksen «Om tabellen» i steg 2 og knappen ved overskriften i steg 3 og 4 viser FHIs beskrivelse av tabellen
+
+Siden «Om verktøyet» (lenken i headeren, `#om`) beskriver verktøyet og kildene uten tekniske detaljer.
 
 ### Lenker
 
@@ -98,7 +101,7 @@ Alt kjører i nettleseren din - ingen backend-server er nødvendig.
 - `index.html` — HTML-skall, laster `js/app.js` som ES-modul
 - `js/app.js` — hovedkomponent: state, effekter og sammensetning av skjermbildene
 - `js/lib/` — ren logikk (CSV-parsing, tabell-label-oppslag, geografi-gruppering, spørringsbygging, Power Query- og cURL-generering, forhåndsvisning/CSV-eksport, JSON-stat til lang tabell og figurvalg, standardutvalg, valg i URL-en, pivottabell, radtelling, formatering, sikker HTML-rendering, syntax-highlighting) — hver fil har en tilhørende `*.test.mjs`
-- `js/components/` — `ui.mjs` (basiskomponenter: Button, Segment, Chip, Badge, Card m.fl.), `StepList.mjs`, `Layout.mjs` (header og sidekolonne) ett skjermbilde per steg (`DataStep.mjs` er steg 4 med fanene), `Chart.mjs` (figur), `TableView.mjs` (pivot og liste) `QueryResult.mjs` (fanen «API og Power BI») og `AboutPage.mjs` (siden «Om verktøyet», `#om`, med teksten i `om.html`)
+- `js/components/` — `ui.mjs` (basiskomponenter: Button, Segment, Chip, Badge, Card m.fl.), `StepList.mjs`, `Layout.mjs` (header og sidekolonne), ett skjermbilde per steg (`DataStep.mjs` er steg 4 med fanene), `Chart.mjs` (figur), `TableView.mjs` (pivot og liste), `QueryResult.mjs` (fanen «API og Power BI») og `AboutPage.mjs` (siden «Om verktøyet», `#om`, med teksten i `om.html`)
 - `styles/app.css` — tokens, komponenter, layout, responsivt og mørkt tema (designspråk A, se `design/fhi-redesign.md`)
 
 ### Kjøre lokalt
@@ -127,6 +130,10 @@ Push til `main` publiserer på GitHub Pages. Før opplasting kjører workflowen 
 - Tabeller som mangler i filen vises i appen under «Nye tabeller», med navn fra FHIs metadata-beskrivelse når API-tittelen bare er et internt navn.
 
 `table_geo_levels.json` sier hvilke geografiske nivåer hver tabell har, så tabelloversikten kan vise dem uten å hente dimensjonene til alle tabellene. Kildene koder geografi ulikt (`GEO`, `FYLKE`, `BOSTED` m.fl.), og nivået tolkes fra kodeformat og navn (`geoLevelsOfDimensions` i `js/lib/geo.mjs`). Den ukentlige sjekken melder fra om tabeller som mangler i filen; oppdater den med `node scripts/update-geo-levels.mjs` (tar et par minutter fordi API-et begrenser antall kall). Detaljpanelet for valgt tabell regner nivåene ut fra tabellens egne dimensjoner.
+
+### Tekst på «Om verktøyet»
+
+Teksten ligger i `om.html` og kan redigeres som vanlig HTML uten å røre koden. Kommentaren øverst i filen viser hvilke tagger som er tillatt, og markørene for kildelisten (`<div data-kilder>`) og geografimerkene (`<span data-geonivaer>`).
 
 ### Kjøre tester
 
@@ -171,6 +178,8 @@ For geografiske data (GEO-dimensjon) håndteres følgende nivåer:
   SSB deler inn kommunene puljevis, så foreløpig har 66 kommuner levekårssoner, og bare noen
   FHI-tabeller har dem. Sonene vises under kommunen sin, også i Bergen der FHI legger dem under bydelen
 
+Andre kilder koder geografi annerledes: KPR bruker dimensjonen `Sted` med navn og gyldighetsperiode i koden (`0101 Halden (2008-2019)`), og noen dropper ledende null (`301` for Oslo kommune). Treet grupperer på tallet først i koden (`geoKey` i `js/lib/geo.mjs`), viser utgåtte enheter (med sluttår) dempet etter de gjeldende, og standardutvalget tar bare med gjeldende fylker.
+
 Appen lar deg enkelt velge "alle kommuner i fylke X", "alle bydeler i Oslo" eller "alle levekårssoner i Halden".
 `geo_mapping.csv` har koder og navn for alle nivåene, også levekårssonene.
 
@@ -199,9 +208,11 @@ Hvis noe går galt:
 
 ## Kompatibilitet
 
-- Chrome/Edge (versjon 90+)
-- Firefox (versjon 88+)
-- Safari (versjon 14+)
+- Chrome/Edge (versjon 89+)
+- Firefox (versjon 108+)
+- Safari (versjon 16.4+)
+
+Den publiserte versjonen bruker import maps (se «Publisering»), som krever disse versjonene.
 - Fungerer på mobiltelefoner og nettbrett
 
 
@@ -211,7 +222,7 @@ Det deles som åpen kildekode
 under [MIT-lisensen](./LICENSE). Dette innebærer at alle står fritt til å bruke, kopiere, endre og
 distribuere programvaren, så lenge opphavsretten og lisensvilkårene beholdes.
 
-Dataene fra FHI er tilgjengelig under [Norsk lisensfor offentlige data](https://data.norge.no/nlod/no/1.0).
+Dataene fra FHI er tilgjengelig under [Norsk lisens for offentlige data](https://data.norge.no/nlod/no/1.0).
 
 ## Versjon
 
