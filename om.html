@@ -1,0 +1,38 @@
+<!--
+  Teksten på siden «Om verktøyet» (#om i appen). Rediger fritt.
+
+  Tillatt: <h2>, <h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, <a href="…">, <br>.
+  Annet vises som vanlig tekst eller hoppes over.
+  - <p class="ingress"> gir større skrift (innledning).
+  - Lenker som starter med http, åpnes i ny fane og får en pil.
+  - <span data-geonivaer></span> viser merkene N F K B LKS.
+  - <div data-kilder></div> viser listen over kildene, hentet fra FHI.
+-->
+
+<p class="ingress">Helsestatistikk gjør det enkelt å finne, se og laste ned folkehelsestatistikk fra norske helseregistre. Tallene hentes direkte fra Folkehelseinstituttets åpne statistikkløsning, så du ser alltid det som sist er publisert. Du kan vise tallene som figur eller tabell, laste dem ned og dele en lenke til akkurat den visningen du har laget.</p>
+
+<h2>Slik bruker du det</h2>
+<ol>
+  <li><strong>Velg kilde.</strong> Et register eller en statistikk, for eksempel Dødsårsaksregisteret eller Folkehelsestatistikk. Du kan også søke etter en tabell på tvers av alle kildene.</li>
+  <li><strong>Velg tabell.</strong> Merkene viser hvilke geografiske nivåer tabellen har tall for: <span data-geonivaer></span> står for hele landet, fylker, kommuner, bydeler og levekårssoner.</li>
+  <li><strong>Velg utvalg.</strong> Hvilke år, steder og grupper du vil se. Appen foreslår et utvalg som gir en oversiktlig figur, og du kan velge flere eller færre.</li>
+  <li><strong>Se dataene.</strong> Som figur eller tabell. Last ned tallene som CSV (for Excel), figuren som bilde, eller kopier en lenke som åpner nøyaktig samme visning.</li>
+</ol>
+<p>Vil du hente tallene automatisk, for eksempel i Power BI eller Excel, finner du ferdige spørringer under «API og Power BI» i siste steg.</p>
+
+<h2>Dette bør du vite om tallene</h2>
+<ul>
+  <li>Tallene er publisert av Folkehelseinstituttet (FHI), og for Folkehelsestatistikk av Helsedirektoratet. Helsestatistikk viser dem slik de er publisert, uten å endre dem.</li>
+  <li>Når det er få tilfeller, skjules noen tall for å beskytte personvernet. De vises med et symbol, for eksempel «:», og ikke som 0. Forklaringen står under figuren og tabellen.</li>
+  <li>FHI oppdaterer statistikken løpende. Når en tabell får ny årgang eller ny inndeling, kan den få nytt tabellnummer. En gammel lenke viser da en melding om at tabellen ikke finnes lenger.</li>
+  <li>Geografien følger inndelingen tabellen er laget for. Etter kommune- og fylkessammenslåinger kan eldre tall ligge under tidligere navn, merket med årene de gjaldt, for eksempel «Østfold (2008–2019)».</li>
+  <li>Tallene kan brukes fritt under <a href="https://data.norge.no/nlod/no/1.0">Norsk lisens for offentlige data (NLOD)</a>. Oppgi kilden, for eksempel «Kilde: Folkehelseinstituttet».</li>
+</ul>
+
+<h2>Kildene</h2>
+<p>Helsestatistikk har tabeller fra disse registrene og statistikkene:</p>
+<div data-kilder></div>
+
+<h2>Om verktøyet</h2>
+<p>Helsestatistikk er et privat prosjekt laget av Jan Hiroshi Lintvedt. Det er ikke laget av eller tilknyttet Folkehelseinstituttet. Har du spørsmål eller finner du feil, send en e-post til <a href="mailto:jhl@plotikon.com">jhl@plotikon.com</a> eller meld fra på <a href="https://github.com/jahili/helsestatistikk/issues">GitHub</a>.</p>
+<p>Teknisk dokumentasjon finner du i <a href="https://github.com/jahili/helsestatistikk#readme">README på GitHub</a>, og FHIs egen beskrivelse av API-et i <a href="https://github.com/folkehelseinstituttet/Fhi.Statistikk.OpenAPI">API-dokumentasjonen</a>.</p>

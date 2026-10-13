@@ -1,9 +1,34 @@
+const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+
+// &amp; &lt; &#171; &#xAB; o.l. til tegn. Ukjente koder står urørt.
+export function decodeEntities(text) {
+    return String(text).replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, function(whole, code) {
+        if (code[0] === '#') {
+            const n = code[1] === 'x' || code[1] === 'X' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
+            return isNaN(n) ? whole : String.fromCodePoint(n);
+        }
+        return Object.prototype.hasOwnProperty.call(ENTITIES, code.toLowerCase()) ? ENTITIES[code.toLowerCase()] : whole;
+    });
+}
+
+// Attributtene i en tagg som { navn: verdi }; attributter uten verdi får ''.
+function parseAttributes(text) {
+    const attrs = {};
+    const attrRegex = /([\w:-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
+    let m;
+    while ((m = attrRegex.exec(text || '')) !== null) {
+        const value = m[2] !== undefined ? m[2] : m[3] !== undefined ? m[3] : m[4] !== undefined ? m[4] : '';
+        attrs[m[1].toLowerCase()] = decodeEntities(value);
+    }
+    return attrs;
+}
+
 export function parseHtmlToTree(htmlString) {
     if (typeof htmlString !== 'string') return htmlString;
 
     const result = [];
     let lastIndex = 0;
-    const tagRegex = /<\/?(\w+)((?:\s+[\w:]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*\/?>/g;
+    const tagRegex = /<\/?(\w+)((?:\s+[\w:-]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*\/?>/g;
     let match;
     const stack = [];
 
@@ -32,8 +57,9 @@ export function parseHtmlToTree(htmlString) {
         } else {
             const element = {
                 tag: tagName,
+                attrs: parseAttributes(match[2]),
                 children: [],
-                self: match[0].endsWith('/')
+                self: match[0].endsWith('/>')
             };
 
             if (element.self || ['br', 'hr'].includes(tagName)) {
@@ -97,4 +123,10 @@ export function parseHTML(htmlString, h) {
     }
 
     return tree.map((el, idx) => renderElement(el, idx));
+}
+
+// Bare vanlige nettlenker, e-post og interne #-lenker slipper gjennom (ikke javascript: o.l.).
+export function safeHref(href) {
+    const value = String(href || '').trim();
+    return /^(https?:\/\/|mailto:|#)/i.test(value) ? value : null;
 }

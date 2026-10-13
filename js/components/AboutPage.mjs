@@ -1,19 +1,29 @@
-// «Om verktøyet» (#om): hva Helsestatistikk er, hvordan det brukes, hva man bør vite om tallene, og kildene.
-// Kildelisten hentes fra FHI-API-et, så den holder seg oppdatert.
+// «Om verktøyet» (#om). Teksten ligger i om.html, så den kan redigeres uten å røre koden.
+// Bare enkle tagger slipper gjennom; kildelisten hentes fra FHI-API-et og settes inn der <div data-kilder> står.
+import { parseHtmlToTree, decodeEntities, safeHref } from '../lib/html.mjs';
 import { LINKS } from './Layout.mjs';
 import { Button, StepHeading, GeoLevels, Icon } from './ui.mjs';
 
-const h = React.createElement;
+const { useState, useEffect, createElement: h } = React;
+const BLOCK_PARENTS = ['root', 'ul', 'ol'];
 
-function external(href, text) {
-    return h('a', { href: href, target: '_blank', rel: 'noopener noreferrer', className: 'external-link' },
-        text, Icon.external(12), h('span', { className: 'sr-only' }, ' (åpnes i ny fane)'));
+let textPromise = null;
+function loadText() {
+    if (!textPromise) {
+        textPromise = fetch('./om.html').then(function(r) {
+            if (!r.ok) throw new Error('status ' + r.status);
+            return r.text();
+        }).catch(function(err) {
+            textPromise = null;
+            throw err;
+        });
+    }
+    return textPromise;
 }
 
-function section(id, title, children) {
-    return h('section', { className: 'about-section', 'aria-labelledby': id },
-        h('h2', { id: id, className: 'about-title' }, title),
-        children);
+function external(href, children) {
+    return h('a', { href: href, target: '_blank', rel: 'noopener noreferrer', className: 'external-link' },
+        children, Icon.external(12), h('span', { className: 'sr-only' }, ' (åpnes i ny fane)'));
 }
 
 function renderSources(ctx) {
@@ -37,49 +47,81 @@ function renderSources(ctx) {
     );
 }
 
-export function renderAboutPage(ctx) {
+// Gjør treet fra parseHtmlToTree om til React-elementer, med bare tillatte tagger.
+function renderNodes(nodes, ctx, parent) {
+    return nodes.map(function(node, i) {
+        if (typeof node === 'string') {
+            // Mellomrom mellom listepunkter og avsnitt er ikke innhold.
+            if (BLOCK_PARENTS.indexOf(parent) !== -1 && !node.trim()) return null;
+            return decodeEntities(node);
+        }
+        const attrs = node.attrs || {};
+        const children = function() { return renderNodes(node.children, ctx, node.tag); };
+        switch (node.tag) {
+            case 'h2': return h('h2', { key: i, className: 'about-title' }, children());
+            case 'h3': return h('h3', { key: i, className: 'about-subtitle' }, children());
+            case 'p': return h('p', { key: i, className: attrs.class === 'ingress' ? 'about-lead' : 'about-text' }, children());
+            case 'ul': return h('ul', { key: i, className: 'about-list' }, children());
+            case 'ol': return h('ol', { key: i, className: 'about-steps' }, children());
+            case 'li': return h('li', { key: i }, children());
+            case 'strong': case 'b': return h('strong', { key: i }, children());
+            case 'em': case 'i': return h('em', { key: i }, children());
+            case 'br': return h('br', { key: i });
+            case 'a': {
+                const href = safeHref(attrs.href);
+                if (!href) return h(React.Fragment, { key: i }, children());
+                return /^https?:/i.test(href)
+                    ? h(React.Fragment, { key: i }, external(href, children()))
+                    : h('a', { key: i, href: href }, children());
+            }
+            case 'span':
+                return 'data-geonivaer' in attrs
+                    ? h(GeoLevels, { key: i, levels: ['N', 'F', 'K', 'B', 'LKS'] })
+                    : h(React.Fragment, { key: i }, children());
+            case 'div':
+                return 'data-kilder' in attrs
+                    ? h(React.Fragment, { key: i }, renderSources(ctx))
+                    : h(React.Fragment, { key: i }, children());
+            default:
+                // Ukjente tagger: behold teksten, dropp taggen.
+                return h(React.Fragment, { key: i }, children());
+        }
+    });
+}
+
+function AboutPage(props) {
+    const ctx = props.ctx;
+    const [text, setText] = useState(null);
+    const [failed, setFailed] = useState(false);
+
+    useEffect(function() {
+        let active = true;
+        loadText().then(
+            function(t) { if (active) setText(t); },
+            function() { if (active) setFailed(true); }
+        );
+        return function() { active = false; };
+    }, []);
+
+    let body;
+    if (failed) {
+        body = h('p', { className: 'about-text' }, 'Kunne ikke laste teksten. Les om verktøyet i ', external(LINKS.readme, 'README på GitHub'), '.');
+    } else if (text === null) {
+        body = h('p', { className: 'side-text' }, 'Laster …');
+    } else {
+        body = renderNodes(parseHtmlToTree(text.replace(/<!--[\s\S]*?-->/g, '')), ctx, 'root');
+    }
+
     return h('div', { className: 'about-page' },
         h(StepHeading, {
             eyebrow: 'OM VERKTØYET',
             title: 'Om Helsestatistikk',
-            subtitle: 'Finn, se og last ned folkehelsestatistikk fra norske helseregistre.',
             actions: [h(Button, { key: 'tilbake', size: 'sm', onClick: ctx.closeAbout }, 'Tilbake til verktøyet')]
         }),
-        h('p', { className: 'about-lead' },
-            'Helsestatistikk henter tallene direkte fra Folkehelseinstituttets åpne statistikkløsning, så du ser alltid ',
-            'det som sist er publisert. Du kan vise tallene som figur eller tabell, laste dem ned og dele en lenke til akkurat ',
-            'den visningen du har laget.'),
-
-        section('om-bruk', 'Slik bruker du det', h('ol', { className: 'about-steps' },
-            h('li', null, h('strong', null, 'Velg kilde. '), 'Et register eller en statistikk, for eksempel Dødsårsaksregisteret eller Folkehelsestatistikk. Du kan også søke etter en tabell på tvers av alle kildene.'),
-            h('li', null, h('strong', null, 'Velg tabell. '), 'Merkene viser hvilke geografiske nivåer tabellen har tall for: ',
-                h(GeoLevels, { levels: ['N', 'F', 'K', 'B', 'LKS'] }), ' står for hele landet, fylker, kommuner, bydeler og levekårssoner.'),
-            h('li', null, h('strong', null, 'Velg utvalg. '), 'Hvilke år, steder og grupper du vil se. Appen foreslår et utvalg som gir en oversiktlig figur, og du kan velge flere eller færre.'),
-            h('li', null, h('strong', null, 'Se dataene. '), 'Som figur eller tabell. Last ned tallene som CSV (for Excel), figuren som bilde, eller kopier en lenke som åpner nøyaktig samme visning.')
-        ), h('p', { className: 'about-text' },
-            'Vil du hente tallene automatisk, for eksempel i Power BI eller Excel, finner du ferdige spørringer under «API og Power BI» i siste steg.')),
-
-        section('om-tall', 'Dette bør du vite om tallene', h('ul', { className: 'about-list' },
-            h('li', null, 'Tallene er publisert av Folkehelseinstituttet (FHI), og for Folkehelsestatistikk av Helsedirektoratet. Helsestatistikk viser dem slik de er publisert, uten å endre dem.'),
-            h('li', null, 'Når det er få tilfeller, skjules noen tall for å beskytte personvernet. De vises med et symbol, for eksempel «:», og ikke som 0. Forklaringen står under figuren og tabellen.'),
-            h('li', null, 'FHI oppdaterer statistikken løpende. Når en tabell får ny årgang eller ny inndeling, kan den få nytt tabellnummer. En gammel lenke viser da en melding om at tabellen ikke finnes lenger.'),
-            h('li', null, 'Geografien følger inndelingen tabellen er laget for. Etter kommune- og fylkessammenslåinger kan eldre tall ligge under tidligere navn, merket med årene de gjaldt, for eksempel «Østfold (2008–2019)».'),
-            h('li', null, 'Tallene kan brukes fritt under ', external('https://data.norge.no/nlod/no/1.0', 'Norsk lisens for offentlige data (NLOD)'),
-                '. Oppgi kilden, for eksempel «Kilde: Folkehelseinstituttet».')
-        )),
-
-        section('om-kilder', 'Kildene', h(React.Fragment, null,
-            h('p', { className: 'about-text' }, 'Helsestatistikk har tabeller fra disse registrene og statistikkene:'),
-            renderSources(ctx))),
-
-        section('om-verktoy', 'Om verktøyet', h(React.Fragment, null,
-            h('p', { className: 'about-text' },
-                'Helsestatistikk er et privat prosjekt laget av Jan Hiroshi Lintvedt. Det er ikke laget av eller tilknyttet Folkehelseinstituttet. ',
-                'Har du spørsmål eller finner du feil, send en e-post til ', h('a', { href: 'mailto:jhl@plotikon.com' }, 'jhl@plotikon.com'),
-                ' eller meld fra på ', external(LINKS.github + '/issues', 'GitHub'), '.'),
-            h('p', { className: 'about-text' },
-                'Teknisk dokumentasjon finner du i ', external(LINKS.readme, 'README på GitHub'),
-                ', og FHIs egen beskrivelse av API-et i ', external(LINKS.apiDocs, 'API-dokumentasjonen'), '.')
-        ))
+        body
     );
+}
+
+export function renderAboutPage(ctx) {
+    return h(AboutPage, { ctx: ctx });
 }

@@ -927,10 +927,10 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; a
 .endpoint-link { font-family: var(--font-mono); font-size: 12px; }
 
 /* ---------- Om verktøyet ---------- */
-.about-page { display: flex; flex-direction: column; gap: 28px; max-width: 820px; }
+.about-page { display: flex; flex-direction: column; gap: 12px; max-width: 820px; }
 .about-lead { font-size: 17px; line-height: 1.55; color: var(--text); }
-.about-section { display: flex; flex-direction: column; gap: 10px; }
-.about-title { font-size: 19px; font-weight: 600; color: var(--text); }
+.about-title { margin-top: 18px; font-size: 19px; font-weight: 600; color: var(--text); }
+.about-subtitle { margin-top: 8px; font-size: 16px; font-weight: 600; color: var(--text); }
 .about-text { line-height: 1.6; color: var(--text-muted); }
 .about-steps, .about-list { display: flex; flex-direction: column; gap: 10px; padding-left: 22px; line-height: 1.6; color: var(--text-muted); }
 .about-steps strong { color: var(--text); }
