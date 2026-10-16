@@ -1,0 +1,40 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start lokal webserver",
+      "type": "shell",
+      "command": "python3 -m http.server 8000 --bind 127.0.0.1 & pid=$!; trap 'kill $pid 2>/dev/null' EXIT INT TERM; for i in $(seq 50); do kill -0 $pid 2>/dev/null || break; if curl -s -o /dev/null http://127.0.0.1:8000/; then xdg-open http://localhost:8000 >/dev/null 2>&1; break; fi; sleep 0.2; done; wait $pid",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "/bin/bash",
+          "args": ["-c"]
+        },
+        "env": {
+          "PYTHONUNBUFFERED": "1"
+        }
+      },
+      "isBackground": true,
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "problemMatcher": {
+        "owner": "http-server",
+        "pattern": {
+          "regexp": "^__ingen_feilmeldinger__$"
+        },
+        "background": {
+          "activesBegin": true,
+          "beginsPattern": "^Serving HTTP",
+          "endsPattern": "^Serving HTTP on .* port \\d+"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    }
+  ]
+}
